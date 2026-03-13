@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pioneer Portal V3 - Virtual Classroom</title>
+    <style>
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            /* Warna background gelap elegan */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            outline: none;
+        }
+
+        /* Overlay Login */
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+
+        .login-card {
+            background: #2d2d2d;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+        }
+
+        h1 {
+            color: #00d2ff;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: #ccc;
+            margin-bottom: 2rem;
+        }
+
+        #login-btn {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        #login-btn:hover {
+            background-color: #357ae8;
+            transform: scale(1.05);
+        }
+
+        /* Status Audio */
+        #audio-status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="ui-overlay">
+        <div class="login-card">
+            <h1>PIONEER PORTAL V3</h1>
+            <p>Selamat datang di Kelas Virtual Masa Depan</p>
+            <button id="login-btn">Masuk dengan Google</button>
+            <button id="logout-btn"
+                style="display: none; position: absolute; top: 20px; right: 20px; z-index: 20; background: #ff4757; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                Keluar Kelas
+            </button>
+        </div>
+    </div>
+
+    <canvas id="renderCanvas"></canvas>
+
+    <div id="audio-status">Status: Menunggu Interaksi...</div>
+
+    <script type="module" src="/src/main.ts"></script>
+
+</body>
+
+</html>

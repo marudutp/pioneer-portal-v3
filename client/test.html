@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🧪 WebRTC Voice Lab</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #1a1a1a; color: white; }
+        .status { margin: 20px; padding: 15px; border-radius: 8px; background: #333; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #27ae60; color: white; border: none; border-radius: 5px; }
+        #log { text-align: left; font-family: monospace; background: black; padding: 10px; height: 200px; overflow-y: scroll; margin-top: 20px; color: #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>Pioneer Voice Lab 🎙️</h1>
+    <div class="status">
+        <p id="role-display">Mendeteksi Role...</p>
+        <button id="start-btn">1. Klik untuk Aktifkan Mic</button>
+    </div>
+    <div id="log"></div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <script>
+        const logEl = document.getElementById('log');
+        function logger(msg) { logEl.innerHTML += `> ${msg}<br>`; logEl.scrollTop = logEl.scrollHeight; }
+
+        // --- KONFIGURASI ---
+        const socket = io("https://192.168.0.109:3000", { secure: true, rejectUnauthorized: false });
+        let pc = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
+
+        let localStream;
+        let myRole = "";
+
+        // --- 1. HANDLING ROLE ---
+        socket.on('connect', () => logger("Connected to Server!"));
+        
+        // Simulasi join untuk dapat role
+        socket.emit('join', { avatarModel: "test" });
+        
+        socket.on('assignRole', (data) => {
+            myRole = data.role;
+            document.getElementById('role-display').innerText = `Role Anda: ${myRole.toUpperCase()}`;
+            logger(`Role diberikan: ${myRole}`);
+        });
+
+        // --- 2. AKTIFKAN MIC ---
+        document.getElementById('start-btn').onclick = async () => {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                logger("🎤 Mic Aktif!");
+                
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+                if (myRole === 'guru') {
+                    logger("📢 Guru membuat Offer...");
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    socket.emit('voice-offer', { offer: offer });
+                }
+            } catch (e) { logger("❌ Error Mic: " + e.message); }
+        };
+
+        // --- 3. SIGNALING (Sesuai Server Anda) ---
+        socket.on('voice-offer', async (data) => {
+            if (myRole === 'siswa') {
+                logger("📥 Menerima Offer dari Guru...");
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                socket.emit('voice-answer', { answer: answer });
+                logger("📤 Siswa mengirim Answer...");
+            }
+        });
+
+        socket.on('voice-answer', async (data) => {
+            if (myRole === 'guru') {
+                logger("📥 Answer diterima dari Siswa!");
+                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+        });
+
+        socket.on('voice-ice', async (data) => {
+            if (data.candidate) {
+                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        });
+
+        pc.onicecandidate = (e) => {
+            if (e.candidate) socket.emit('voice-ice', { candidate: e.candidate });
+        };
+
+        // --- 4. OUTPUT SUARA ---
+        pc.ontrack = (e) => {
+            logger("🔊 TRACK SUARA DITERIMA! Memutar...");
+            const audio = new Audio();
+            audio.srcObject = e.streams[0];
+            audio.autoplay = true;
+            document.body.appendChild(audio);
+            
+            // Cek jika diblokir
+            audio.play().catch(() => logger("⚠️ Audio ditahan browser! KLIK DI MANA SAJA!"));
+        };
+
+        window.onclick = () => {
+            const audios = document.querySelectorAll('audio');
+            audios.forEach(a => a.play());
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",        // <-- Ini kuncinya!
+    "moduleResolution": "NodeNext", // <-- Dan ini!
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist"
+  },
+  "ts-node": {
+    "esm": true
+  }
+}

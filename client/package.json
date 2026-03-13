@@ -1,0 +1,24 @@
+{
+  "name": "v-class-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^6.49.0",
+    "@babylonjs/gui": "^6.49.0",
+    "@babylonjs/loaders": "^6.49.0",
+    "firebase": "^12.10.0",
+    "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "@types/web": "^0.0.339",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
+  }
+}

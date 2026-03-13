@@ -11,12 +11,18 @@ const __dirname = dirname(__filename);
 const app = express();
 
 const server = http.createServer(app);
+app.get('/', (req, res) => {
+    res.send("🚀 SERVER PIONEER V3 IS LIVE!");
+});
+
 const io = new Server(server, {
     cors: {
-        origin: "*",
+        // origin: "*",
+        origin: "https://pioneer-portal-v3.vercel.app",
         methods: ["GET", "POST"],
-        // credentials: true
-    }, allowEIO3: true // Support versi socket.io lama jika ada
+        credentials: true
+    }
+    // , allowEIO3: true // Support versi socket.io lama jika ada
 });
 
 const activeUsers = new Map();

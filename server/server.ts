@@ -16,22 +16,30 @@ const isProduction =
     process.env.REPLIT_ID !== undefined ||
     process.env.PORT !== undefined ||
     process.env.NODE_ENV === 'production';
-
+// Kalau ada REPLIT_ID atau PORT dari environment, berarti kita di CLOUD.
+const isCloud = process.env.REPLIT_ID !== undefined || process.env.PORT !== undefined;
 let server;
 // const server = http.createServer(app);
 
-if (isProduction) {
-    // MODE CLOUD (REPLIT): Pakai HTTP biasa, SSL diurus Proxy Replit
+if (isCloud) {
+    // --- MODE REPLIT ---
+    // WAJIB: Pakai HTTP biasa (SSL sudah di-handle Proxy Replit)
     server = http.createServer(app);
-    console.log("🚀 CLOUD MODE DETECTED: Running on HTTP (Standard for Replit)");
+    console.log("🚀 CLOUD MODE DETECTED: Running on HTTP for Replit");
 } else {
-    // MODE LOKAL: Pakai HTTPS manual biar Mic/WebRTC aktif di laptop
-    const options = {
-        key: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2-key.pem')),
-        cert: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2.pem')),
-    };
-    server = https.createServer(options, app);
-    console.log("🛠️ LOCAL MODE DETECTED: Running on HTTPS with certs");
+    // --- MODE LOKAL (LAPTOP) ---
+    // Pakai HTTPS biar Mic/WebRTC jalan di localhost
+    try {
+        const options = {
+            key: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2-key.pem')),
+            cert: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2.pem')),
+        };
+        server = https.createServer(options, app);
+        console.log("🛠️ LOCAL MODE DETECTED: Running on HTTPS with certs");
+    } catch (e) {
+        console.log("⚠️ Gagal baca cert, fallback ke HTTP");
+        server = http.createServer(app);
+    }
 }
 
 app.get('/', (req, res) => {

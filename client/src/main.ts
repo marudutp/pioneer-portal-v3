@@ -14,9 +14,7 @@ import { ROLES } from "@shared/constants";
 interface AppUser extends User {
     role: string;
 }
-// Konfigurasi Server (Sesuaikan dengan URL server kamu, Ferguso!)
-// const SERVER_URL = "https://localhost:3000";
-const SERVER_URL = "https://192.168.0.109:3000";
+const SERVER_URL = `${window.location.protocol}//${window.location.hostname}:3000`;
 
 let isStarted = false;
 

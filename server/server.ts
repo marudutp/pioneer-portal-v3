@@ -6,6 +6,11 @@ import { dirname } from 'path';
 import fs from 'fs';
 import path from 'path';
 import { ROLES, NETWORK_EVENTS } from "../shared/constants.ts";
+import os from 'os';
+
+// DETEKSI LEBIH AKURAT
+const hostname = os.hostname();
+const isReplit = process.env.REPLIT_ID || process.env.PORT || hostname.includes('replit') || process.cwd().includes('runner');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,24 +26,22 @@ const isCloud = process.env.REPLIT_ID !== undefined || process.env.PORT !== unde
 let server;
 // const server = http.createServer(app);
 
-if (isCloud) {
-    // --- MODE REPLIT ---
-    // WAJIB: Pakai HTTP biasa (SSL sudah di-handle Proxy Replit)
+if (isReplit) {
+    // --- FORCE HTTP UNTUK REPLIT ---
     server = http.createServer(app);
-    console.log("🚀 CLOUD MODE DETECTED: Running on HTTP for Replit");
+    console.log("🚀 [SADAR MODE] REPLIT DETECTED! Running on HTTP");
 } else {
-    // --- MODE LOKAL (LAPTOP) ---
-    // Pakai HTTPS biar Mic/WebRTC jalan di localhost
+    // --- HTTPS HANYA UNTUK LOKAL ---
     try {
         const options = {
             key: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2-key.pem')),
             cert: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2.pem')),
         };
         server = https.createServer(options, app);
-        console.log("🛠️ LOCAL MODE DETECTED: Running on HTTPS with certs");
+        console.log("🛠️ LOCAL MODE: Running on HTTPS");
     } catch (e) {
-        console.log("⚠️ Gagal baca cert, fallback ke HTTP");
         server = http.createServer(app);
+        console.log("⚠️ Cert gak ada, pake HTTP aja");
     }
 }
 
@@ -155,14 +158,23 @@ io.on('connection', (socket: any) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
-// server.listen(PORT, 'localhost', () => {
-const protocol = isProduction ? 'http' : 'https'; // Lokal pakai https
-server.listen(PORT, () => {
-    console.log("--------------------------------------------------");
-    console.log("🚀 PIONEER PORTAL V3: SERVER ONLINE");
-    console.log(`🔗 Address: ${protocol}://localhost:${PORT}`);
-    console.log(`🌍 MODE: ${isProduction ? 'PRODUCTION (REPLIT)' : 'DEVELOPMENT (LOCAL)'}`);
+// const PORT = process.env.PORT || 3000;
+// // server.listen(PORT, 'localhost', () => {
+// const protocol = isProduction ? 'http' : 'https'; // Lokal pakai https
+// server.listen(PORT, () => {
+//     console.log("--------------------------------------------------");
+//     console.log("🚀 PIONEER PORTAL V3: SERVER ONLINE");
+//     console.log(`🔗 Address: ${protocol}://localhost:${PORT}`);
+//     console.log(`🌍 MODE: ${isProduction ? 'PRODUCTION (REPLIT)' : 'DEVELOPMENT (LOCAL)'}`);
 
+//     console.log("--------------------------------------------------");
+// });
+
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, '0.0.0.0', () => {
+    console.log("--------------------------------------------------");
+    console.log(`📡 SERVER JALAN DI PORT: ${PORT}`);
+    console.log(`🔗 MODE: ${isReplit ? 'CLOUD/REPLIT' : 'LOCAL'}`);
     console.log("--------------------------------------------------");
 });

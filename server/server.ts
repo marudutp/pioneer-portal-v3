@@ -118,8 +118,9 @@ io.on('connection', (socket: any) => {
     });
 });
 
-const PORT = 3000;
-server.listen(PORT, 'localhost', () => {
+const PORT = process.env.PORT || 3000;
+// server.listen(PORT, 'localhost', () => {
+server.listen(PORT, () => {
     console.log("--------------------------------------------------");
     console.log("🚀 PIONEER PORTAL V3: SERVER ONLINE");
     console.log(`🔗 Address: http://localhost:${PORT}`);

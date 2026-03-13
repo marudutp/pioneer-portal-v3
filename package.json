@@ -1,7 +1,8 @@
 {
   "name": "pioneer-portal-v3",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
+    "dev": "npm run dev --prefix server",
+    "start": "npm run start --prefix server",
     "install-all": "npm install --prefix client && npm install --prefix server"
   },
   "devDependencies": {

@@ -14,7 +14,10 @@ import { ROLES } from "@shared/constants";
 interface AppUser extends User {
     role: string;
 }
-const SERVER_URL = `${window.location.protocol}//${window.location.hostname}:3000`;
+// const SERVER_URL = `${window.location.protocol}//${window.location.hostname}:3000`;
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || `${window.location.protocol}//${window.location.hostname}:3000`;
+
+console.log("🚀 Menghubungkan ke Server di:", SERVER_URL);
 
 let isStarted = false;
 

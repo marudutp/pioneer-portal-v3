@@ -149,10 +149,11 @@ io.on('connection', (socket: any) => {
 
 const PORT = process.env.PORT || 3000;
 // server.listen(PORT, 'localhost', () => {
+const protocol = isProduction ? 'http' : 'https'; // Lokal pakai https
 server.listen(PORT, () => {
     console.log("--------------------------------------------------");
     console.log("🚀 PIONEER PORTAL V3: SERVER ONLINE");
-    console.log(`🔗 Address: http://localhost:${PORT}`);
+    console.log(`🔗 Address: ${protocol}://localhost:${PORT}`);
     console.log(`🌍 MODE: ${isProduction ? 'PRODUCTION (REPLIT)' : 'DEVELOPMENT (LOCAL)'}`);
 
     console.log("--------------------------------------------------");

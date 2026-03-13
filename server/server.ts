@@ -19,7 +19,8 @@ const app = express();
 
 // 1. PASANG CORS DI EXPRESS (WAJIB biar gak 502/403)
 app.use(cors({
-    origin: ["https://pioneer-portal-v3.vercel.app", "http://localhost:5000"],
+    // origin: ["https://pioneer-portal-v3.vercel.app", "http://localhost:5000"],
+     origin: "*",
     credentials: true
 }));
 

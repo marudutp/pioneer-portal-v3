@@ -1,16 +1,39 @@
 import express from 'express';
 import { Server } from 'socket.io';
-import http from 'http';
+import http from 'http'; import https from 'https';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-
+import fs from 'fs';
+import path from 'path';
 import { ROLES, NETWORK_EVENTS } from "../shared/constants.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
 
-const server = http.createServer(app);
+// --- INI "OTAK"NYA, JANGAN SAMPAI KETINGGALAN ---
+const isProduction =
+    process.env.REPLIT_ID !== undefined ||
+    process.env.PORT !== undefined ||
+    process.env.NODE_ENV === 'production';
+
+let server;
+// const server = http.createServer(app);
+
+if (isProduction) {
+    // MODE CLOUD (REPLIT): Pakai HTTP biasa, SSL diurus Proxy Replit
+    server = http.createServer(app);
+    console.log("🚀 CLOUD MODE DETECTED: Running on HTTP (Standard for Replit)");
+} else {
+    // MODE LOKAL: Pakai HTTPS manual biar Mic/WebRTC aktif di laptop
+    const options = {
+        key: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2-key.pem')),
+        cert: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2.pem')),
+    };
+    server = https.createServer(options, app);
+    console.log("🛠️ LOCAL MODE DETECTED: Running on HTTPS with certs");
+}
+
 app.get('/', (req, res) => {
     res.send("🚀 SERVER PIONEER V3 IS LIVE!");
 });
@@ -130,5 +153,7 @@ server.listen(PORT, () => {
     console.log("--------------------------------------------------");
     console.log("🚀 PIONEER PORTAL V3: SERVER ONLINE");
     console.log(`🔗 Address: http://localhost:${PORT}`);
+    console.log(`🌍 MODE: ${isProduction ? 'PRODUCTION (REPLIT)' : 'DEVELOPMENT (LOCAL)'}`);
+
     console.log("--------------------------------------------------");
 });

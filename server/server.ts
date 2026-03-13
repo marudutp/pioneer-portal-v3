@@ -15,8 +15,8 @@ const io = new Server(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"],
-        credentials: true
-    }
+        // credentials: true
+    }, allowEIO3: true // Support versi socket.io lama jika ada
 });
 
 const activeUsers = new Map();

@@ -19,7 +19,13 @@ export class NetworkManager {
 
     constructor(serverUrl: string, avatarManager: AvatarManager) {
         this.avatarManager = avatarManager;
-        this.socket = io(serverUrl, { secure: true, rejectUnauthorized: false });
+        this.socket = io(serverUrl, {
+            secure: true, transports: ['websocket'],
+            upgrade: false,
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000
+        });
         this.setupSocketListeners();
     }
     public setWhiteboardManager(wb: WhiteboardManager) {

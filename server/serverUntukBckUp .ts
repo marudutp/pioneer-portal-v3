@@ -5,34 +5,33 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
 import path from 'path';
-import { ROLES, NETWORK_EVENTS } from "../shared/constants.ts";
+import { ROLES, NETWORK_EVENTS } from "../shared/constants.js";
 import os from 'os';
-import cors from 'cors';
 
 // DETEKSI LEBIH AKURAT
-// const hostname = os.hostname();
-// const isReplit = process.env.REPLIT_ID || process.env.PORT || hostname.includes('replit') || process.cwd().includes('runner');
+const hostname = os.hostname();
+const isReplit = process.env.REPLIT_ID || process.env.PORT || hostname.includes('replit') || process.cwd().includes('runner');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
 
-// 1. PASANG CORS DI EXPRESS (WAJIB biar gak 502/403)
-app.use(cors({
-    origin: ["https://pioneer-portal-v3.vercel.app", "http://localhost:5000"],
-    credentials: true
-}));
-
-// 2. DETEKSI REPLIT
-const hostname = os.hostname();
-const isReplit = process.env.REPLIT_ID || process.env.PORT || hostname.includes('replit') || process.cwd().includes('runner');
-
+// --- INI "OTAK"NYA, JANGAN SAMPAI KETINGGALAN ---
+const isProduction =
+    process.env.REPLIT_ID !== undefined ||
+    process.env.PORT !== undefined ||
+    process.env.NODE_ENV === 'production';
+// Kalau ada REPLIT_ID atau PORT dari environment, berarti kita di CLOUD.
+const isCloud = process.env.REPLIT_ID !== undefined || process.env.PORT !== undefined;
 let server;
+// const server = http.createServer(app);
 
 if (isReplit) {
+    // --- FORCE HTTP UNTUK REPLIT ---
     server = http.createServer(app);
     console.log("🚀 [SADAR MODE] REPLIT DETECTED! Running on HTTP");
 } else {
+    // --- HTTPS HANYA UNTUK LOKAL ---
     try {
         const options = {
             key: fs.readFileSync(path.join(__dirname, 'cert', 'localhost+2-key.pem')),
@@ -42,25 +41,22 @@ if (isReplit) {
         console.log("🛠️ LOCAL MODE: Running on HTTPS");
     } catch (e) {
         server = http.createServer(app);
-        console.log("⚠️ Cert gak ada, fallback ke HTTP");
+        console.log("⚠️ Cert gak ada, pake HTTP aja");
     }
 }
 
-// 3. RUTE PENGETESAN (Taruh di atas io)
 app.get('/', (req, res) => {
-    console.log("🔔 Seseorang mengetok pintu server (Route / diakses)");
-    res.send("🚀 PIONEER PORTAL V3 SERVER IS LIVE!");
+    res.send("🚀 SERVER PIONEER V3 IS LIVE!");
 });
 
-
-// 4. SOCKET.IO CONFIG
 const io = new Server(server, {
     cors: {
-        origin: ["https://pioneer-portal-v3.vercel.app", "http://localhost:5000"],
+        // origin: "*",
+        origin: "https://pioneer-portal-v3.vercel.app",
         methods: ["GET", "POST"],
         credentials: true
-    },
-    transports: ['polling', 'websocket']
+    }
+    // , allowEIO3: true // Support versi socket.io lama jika ada
 });
 
 const activeUsers = new Map();

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pioneer Admin Dashboard</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
+        .card { background: #2d2d2d; padding: 20px; border-radius: 10px; border: 1px solid #444; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+        th { background: #3d3d3d; color: #00ff00; }
+        button { cursor: pointer; padding: 5px 10px; border-radius: 5px; border: none; }
+        .btn-kick { background: #ff4d4d; color: white; }
+        .btn-broadcast { background: #00ff00; color: #000; font-weight: bold; padding: 10px; width: 100%; margin-top: 10px; }
+        input { width: 100%; padding: 10px; box-sizing: border-box; background: #3d3d3d; border: 1px solid #555; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Pioneer Admin Dashboard v1.0</h1>
+    
+    <div class="card">
+        <h3>📢 Broadcast Pengumuman</h3>
+        <input type="text" id="broadcastMsg" placeholder="Ketik pesan untuk semua murid...">
+        <button class="btn-broadcast" onclick="sendBroadcast()">KIRIM KE SEMUA LAYAR</button>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+        <h3>👥 Siswa Online (<span id="count">0</span>/10)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nama</th>
+                    <th>UID</th>
+                    <th>Role</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="user-table"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const socket = io(); // Connect ke server Replit Om
+
+        function refreshUsers() {
+            fetch('/api/admin/users')
+                .then(res => res.json())
+                .then(users => {
+                    const table = document.getElementById('user-table');
+                    const count = document.getElementById('count');
+                    table.innerHTML = '';
+                    count.innerText = users.filter(u => u.role !== 'teacher').length;
+
+                    users.forEach(user => {
+                        const row = `<tr>
+                            <td>${user.displayName}</td>
+                            <td>${user.uid.substring(0, 8)}...</td>
+                            <td>${user.role}</td>
+                            <td>
+                                <button class="btn-kick" onclick="kickUser('${user.uid}')">KICK</button>
+                            </td>
+                        </tr>`;
+                        table.innerHTML += row;
+                    });
+                });
+        }
+
+        function kickUser(uid) {
+            if(confirm('Yakin mau nendang user ini, Om?')) {
+                socket.emit('admin_kick_user', uid);
+                setTimeout(refreshUsers, 1000);
+            }
+        }
+
+        function sendBroadcast() {
+            const msg = document.getElementById('broadcastMsg').value;
+            if(msg) {
+                socket.emit('admin_broadcast', msg);
+                alert('Pesan terkirim!');
+                document.getElementById('broadcastMsg').value = '';
+            }
+        }
+
+        // Refresh setiap 5 detik
+        setInterval(refreshUsers, 5000);
+        refreshUsers();
+    </script>
+</body>
+</html>

@@ -5,7 +5,8 @@ import { PeerVoice } from "./PeerVoice";
 import { WhiteboardManager } from "../managers/WhiteboardManager";
 
 export class NetworkManager {
-    private socket: Socket;
+    // private socket: Socket;
+    public socket: any;
     private avatarManager: AvatarManager;
     private peerVoices: Map<string, PeerVoice> = new Map();
     private localStream: MediaStream | null = null;
@@ -218,6 +219,28 @@ export class NetworkManager {
                 console.log("🧼 PERINTAH HAPUS MASUK!");
                 this.whiteboardManager.clearBoard(false); // false agar tidak lapor balik ke server
             }
+        });
+
+        this.socket.on('capacityUpdate', (data: { current: number, max: number }) => {
+            const currentEl = document.getElementById('current-cap');
+            const maxEl = document.getElementById('max-cap');
+
+            if (currentEl && maxEl) {
+                currentEl.innerText = data.current.toString();
+                maxEl.innerText = data.max.toString();
+
+                // Kasih efek warna merah kalau sudah mau penuh
+                const indicator = document.getElementById('capacity-indicator');
+                if (indicator) {
+                    indicator.style.color = data.current >= data.max ? '#ff0000' : '#00ff00';
+                    indicator.style.borderColor = data.current >= data.max ? '#ff0000' : '#00ff00';
+                }
+            }
+        });
+
+        // Listener untuk pesan error (jika ditendang)
+        this.socket.on('error_message', (data: { title: string, message: string }) => {
+            alert(`${data.title}\n\n${data.message}`);
         });
     }
 

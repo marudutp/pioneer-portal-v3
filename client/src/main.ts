@@ -9,6 +9,7 @@ import { WhiteboardUI } from "./managers/WhiteboardUI";
 import { User } from "firebase/auth"; // Atau library auth yang kamu pakai
 import { TEACHER_EMAILS } from "@shared/admin.config";
 import { ROLES } from "@shared/constants";
+import { VirtualJoystick } from "@babylonjs/core";
 
 // Buat "KTP" baru untuk User kita
 interface AppUser extends User {
@@ -122,6 +123,7 @@ let isStarted = false;
 //         engine.resize();
 //     });
 // }
+
 async function bootstrap() {
     const overlay = document.getElementById("ui-overlay");
     if (overlay) overlay.style.opacity = "0";
@@ -171,11 +173,46 @@ async function bootstrap() {
     });
     avatarManager.localAvatar = myAvatar;
 
-    // 7. Logika Pergerakan
+    // 7. Logika Pergerakan (PC/Keyboard)
     setupInput(scene, myAvatar, (pos, rot) => {
         networkManager.sendMovement(pos, rot);
     });
 
+    // --- 7.5 LOGIKA MOBILE (JOYSTICK) ---
+    // Deteksi lebih akurat untuk HP & Tablet (termasuk iPad Pro)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0);
+
+    if (isMobile) {
+        const mobileUI = document.getElementById('mobile-controls');
+        if (mobileUI) mobileUI.style.display = 'flex';
+
+        // Buat Joystick Kiri (Movement)
+        const leftJoystick = new VirtualJoystick(true);
+        leftJoystick.setJoystickSensibility(0.05);
+
+        // Buat Joystick Kanan (Rotation)
+        const rightJoystick = new VirtualJoystick(false);
+        rightJoystick.reverseUpDown = true;
+
+        // Masukkan ke dalam Render Loop
+        scene.onBeforeRenderObservable.add(() => {
+            if (leftJoystick.pressed) {
+                // Pastikan panggil fungsi yang sudah kita perbaiki tadi
+                // avatarManager.handleAvatarMovement(leftJoystick.deltaPosition.x, leftJoystick.deltaPosition.y);
+                avatarManager.handleAvatarMovement(
+                    leftJoystick.deltaPosition.x,
+                    leftJoystick.deltaPosition.y,
+                    scene.activeCamera,    // <--- Butuh setoran Kamera
+                    (networkManager as any).socket  // <--- Butuh setoran Socket buat lapor ke server
+                );
+            }
+
+            if (rightJoystick.pressed) {
+                // PAKAI 'myAvatar' (sesuai variabel di langkah 6)
+                myAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
+            }
+        });
+    }
     // 8. Munculkan UI Whiteboard
     new WhiteboardUI(wbManager, user.role);
 

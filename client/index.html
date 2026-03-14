@@ -89,6 +89,32 @@
             font-size: 12px;
             pointer-events: none;
         }
+
+        /* Container untuk joystick */
+        .joystick-container {
+            position: absolute;
+            bottom: 50px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-sizing: border-box;
+            pointer-events: none;
+            /* Supaya nggak nge-blok klik di area lain */
+            z-index: 10;
+        }
+
+        /* Bulatan Joystick */
+        .joystick {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            pointer-events: auto;
+            /* Aktifkan sentuhan khusus di sini */
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            touch-action: none;
+        }
     </style>
 </head>
 
@@ -105,8 +131,27 @@
             </button>
         </div>
     </div>
-
+    <div id="capacity-indicator" style="
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    background: rgba(0,0,0,0.6); 
+    color: #00ff00; 
+    padding: 10px 15px; 
+    border-radius: 8px; 
+    font-family: 'Courier New', monospace;
+    border: 1px solid #00ff00;
+    pointer-events: none;
+    z-index: 100;
+">
+        Kapasitas: <span id="current-cap">0</span>/<span id="max-cap">10</span>
+    </div>
     <canvas id="renderCanvas"></canvas>
+    <div class="joystick-container" id="mobile-controls" style="display: none;">
+        <div id="leftJoystick" class="joystick"></div>
+
+        <div id="rightJoystick" class="joystick"></div>
+    </div>
 
     <div id="audio-status">Status: Menunggu Interaksi...</div>
 

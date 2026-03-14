@@ -16,11 +16,14 @@ import cors from 'cors';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
+// --- Tambahkan di bagian atas bersama import lainnya ---
+const ADMIN_UID = "PjSNNdrP0DP0PddcE7wElgSkppE3"; // Ganti dengan UID Firebase Om
+
 
 // 1. PASANG CORS DI EXPRESS (WAJIB biar gak 502/403)
 app.use(cors({
     // origin: ["https://pioneer-portal-v3.vercel.app", "http://localhost:5000"],
-     origin: "*",
+    origin: "*",
     credentials: true
 }));
 
@@ -53,6 +56,18 @@ app.get('/', (req, res) => {
     res.send("🚀 PIONEER PORTAL V3 SERVER IS LIVE!");
 });
 
+// --- Tambahkan endpoint untuk halaman Admin UI ---
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// --- Endpoint API untuk ambil data user real-time ---
+app.get('/api/admin/users', (req, res) => {
+    // Sederhanakan data Map agar bisa dikirim sebagai JSON
+    const users = Array.from(activeUsers.values());
+    res.json(users);
+});
+
 
 // 4. SOCKET.IO CONFIG
 const io = new Server(server, {
@@ -66,13 +81,62 @@ const io = new Server(server, {
 
 const activeUsers = new Map();
 let currentTeacherId: string | null = null;
-
+// 1. Tentukan batas maksimal di bagian atas (di luar io.on)
+const MAX_STUDENTS = 10; // Batas aman untuk Replit Free
+const broadcastCapacity = () => {
+    const studentCount = Array.from(activeUsers.values()).filter(u => u.role !== ROLES.TEACHER).length;
+    io.emit('capacityUpdate', {
+        current: studentCount,
+        max: MAX_STUDENTS
+    });
+    console.log(`📊 Kapasitas Update: ${studentCount}/${MAX_STUDENTS}`);
+};
 io.on('connection', (socket: any) => {
     console.log(`🔌 Handshake: ${socket.id}`);
+    // Aksi Admin: Kick User
+    socket.on('admin_kick_user', (targetUid: string) => {
+        const target = activeUsers.get(targetUid);
+        if (target) {
+            io.to(target.socketId).emit('error_message', {
+                title: "Dikeluarkan",
+                message: "Anda telah dikeluarkan dari kelas oleh Admin."
+            });
+            // Beri jeda sebentar agar pesan sampai, lalu putuskan
+            setTimeout(() => {
+                const targetSocket = io.sockets.sockets.get(target.socketId);
+                if (targetSocket) targetSocket.disconnect();
+            }, 1000);
+        }
+    });
 
+    // Aksi Admin: Broadcast
+    socket.on('admin_broadcast', (message: string) => {
+        io.emit('announcement', message);
+    });
     socket.on(NETWORK_EVENTS.AUTH_JOIN, (data: any) => {
         const { uid, displayName, avatarModel, role } = data;
+        // --- BARIS WAJIB ---
+        socket.uid = uid; // <--- Titipkan UID ke objek socket supaya pas disconnect bisa dibaca
+        // -------------------
+        // --- FITUR AUTO-KICK (ROOM LIMIT) ---
+        // Hitung jumlah siswa yang ada sekarang (tidak menghitung Guru)
+        const currentStudents = Array.from(activeUsers.values()).filter(u => u.role !== ROLES.TEACHER).length;
 
+        // Jika sudah penuh dan yang mau masuk adalah SISWA, tendang!
+        if (currentStudents >= MAX_STUDENTS && role !== ROLES.TEACHER) {
+            console.log(`🚫 KELAS PENUH: Menolak siswa ${displayName}`);
+
+            // Kirim pesan khusus ke si murid agar dia tahu kenapa ditendang
+            socket.emit('error_message', {
+                title: "Kelas Penuh, Om!",
+                message: `Maaf, kapasitas maksimal ${MAX_STUDENTS} siswa sudah tercapai. Coba lagi nanti ya!`
+            });
+
+            // Putuskan koneksi setelah jeda sedikit agar pesan sempat terkirim
+            setTimeout(() => socket.disconnect(), 1000);
+            return;
+        }
+        // --- END OF AUTO-KICK ---
         const userData = {
             uid: uid,
             socketId: socket.id,
@@ -85,6 +149,10 @@ io.on('connection', (socket: any) => {
 
         activeUsers.set(uid, userData);
         socket.uid = uid;
+        // PANGGIL DI SINI:
+        broadcastCapacity();
+
+        console.log(`✅ ${data.displayName} bergabung.`);
 
         if (role === ROLES.TEACHER) {
             currentTeacherId = uid;
@@ -146,9 +214,11 @@ io.on('connection', (socket: any) => {
     });
 
     socket.on('disconnect', () => {
+        let disconnectedUser = "";
         if (socket.uid) {
             const user = activeUsers.get(socket.uid);
             if (user && user.socketId === socket.id) {
+                disconnectedUser = user.displayName;
                 console.log(`❌ User Cabut: ${user.displayName}`);
 
                 if (socket.uid === currentTeacherId) {
@@ -157,6 +227,11 @@ io.on('connection', (socket: any) => {
                 }
 
                 activeUsers.delete(socket.uid);
+                if (disconnectedUser) {
+                    // PANGGIL DI SINI:
+                    broadcastCapacity();
+                    console.log(`❌ ${disconnectedUser} keluar kelas.`);
+                }
                 io.emit(NETWORK_EVENTS.USER_LEFT, socket.uid);
             }
         }

@@ -23,8 +23,7 @@ console.log("🚀 Menghubungkan ke Server di:", SERVER_URL);
 let isStarted = false;
 
 
-// Taruh di bawah baris import, di luar fungsi bootstrap atau setupInput
-const inputMap: { [key: string]: boolean } = {};
+
 async function bootstrap() {
     const overlay = document.getElementById("ui-overlay");
     if (overlay) overlay.style.opacity = "0";
@@ -75,62 +74,45 @@ async function bootstrap() {
     avatarManager.localAvatar = myAvatar;
 
     // 7. Logika Pergerakan (PC/Keyboard)
-    // setupInput(scene, myAvatar, (pos, rot) => {
-    //     networkManager.sendMovement(pos, rot);
-    // });
-
-    // INI YANG BARU (Gunakan ini)
-    setupInput(scene);
+    setupInput(scene, myAvatar, (pos, rot) => {
+        networkManager.sendMovement(pos, rot);
+    });
 
     // --- 7.5 LOGIKA MOBILE (JOYSTICK) ---
     // Deteksi lebih akurat untuk HP & Tablet (termasuk iPad Pro)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0);
-    let leftJoystick: any = null;
-    let rightJoystick: any = null;
+
     // DI MAIN.TS (Bagian bootstrap)
 
     if (isMobile) {
-        leftJoystick = new BABYLON.VirtualJoystick(true);
-        rightJoystick = new BABYLON.VirtualJoystick(false);
-    }
+    document.getElementById('mobile-controls')!.style.display = 'flex';
 
-    // 2. --- INI ADALAH SATU-SATUNYA OTAK PERGERAKAN (Taruh di sini) ---
+    const leftJoystick = new BABYLON.VirtualJoystick(true);
+    const rightJoystick = new BABYLON.VirtualJoystick(false);
+
     scene.onBeforeRenderObservable.add(() => {
-        let inputX = 0;
-        let inputY = 0;
-
-        // Cek Keyboard (PC)
-        if (inputMap["w"]) inputY = 1;
-        if (inputMap["s"]) inputY = -1;
-        if (inputMap["a"]) inputX = -1;
-        if (inputMap["d"]) inputX = 1;
-
-        // Cek Joystick (Jika Mobile & Ditekan)
-        if (isMobile && leftJoystick && leftJoystick.pressed) {
-            inputX = leftJoystick.deltaPosition.x;
-            inputY = leftJoystick.deltaPosition.y;
-        }
-
-        // EKSEKUSI GERAKAN (Semua lewat satu pintu)
-        // Kita tambahkan toleransi 0.05 supaya tidak gerak sendiri kalau joystick goyang dikit
-        if (Math.abs(inputX) > 0.05 || Math.abs(inputY) > 0.05) {
+        if (leftJoystick.pressed) {
+            // PANGGIL LEWAT avatarManager DAN KIRIM KAMERA + SOCKET
             avatarManager.handleAvatarMovement(
-                inputX,
-                inputY,
-                scene.activeCamera,
-                networkManager.socket
+                leftJoystick.deltaPosition.x, 
+                leftJoystick.deltaPosition.y, 
+                scene.activeCamera,     // <--- SETORAN 1
+                networkManager.socket   // <--- SETORAN 2
             );
-        } else {
-            // Balik ke Idle kalau gak ada input
-            avatarManager.handleAvatarMovement(0, 0, scene.activeCamera, networkManager.socket);
         }
 
-        // Rotasi Kamera (Mobile)
-        if (isMobile && rightJoystick && rightJoystick.pressed && avatarManager.localAvatar) {
+        if (rightJoystick.pressed && avatarManager.localAvatar) {
+            // Untuk memutar pandangan kamera/avatar
             avatarManager.localAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
         }
     });
-
+    // Di akhir fungsi bootstrap()
+window.addEventListener("pointerdown", () => {
+    // Paksa Babylon untuk menangkap pointer
+    engine.enterPointerlock(); 
+    console.log("📱 Mobile Input Unlocked!");
+}, { once: true });
+}
 
     // if (isMobile) {
     //     const mobileUI = document.getElementById('mobile-controls');
@@ -163,7 +145,6 @@ async function bootstrap() {
     //         }
     //     });
     // }
-
     // 8. Munculkan UI Whiteboard
     new WhiteboardUI(wbManager, user.role);
 
@@ -186,13 +167,6 @@ async function bootstrap() {
         }
     }, { once: true });
 
-    // Di akhir fungsi bootstrap()
-    window.addEventListener("pointerdown", () => {
-        // Paksa Babylon untuk menangkap pointer
-        engine.enterPointerlock();
-        console.log("📱 Mobile Input Unlocked!");
-    }, { once: true });
-
     window.addEventListener("resize", () => {
         engine.resize();
     });
@@ -200,55 +174,29 @@ async function bootstrap() {
 /**
  * Kontrol Gerakan Sederhana (WASD)
  */
-
-// function setupInput(scene: BABYLON.Scene, mesh: BABYLON.AbstractMesh, onMove: (p: any, r: any) => void) {
-//     const inputMap: any = {};
-//     scene.actionManager = new BABYLON.ActionManager(scene);
-//     scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
-//         inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
-//     }));
-//     scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, (evt) => {
-//         inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
-//     }));
-
-//     // scene.onBeforeRenderObservable.add(() => {
-//     //     let moved = false;
-//     //     const speed = 0.1;
-
-//     //     if (inputMap["w"]) { mesh.position.z += speed; moved = true; }
-//     //     if (inputMap["s"]) { mesh.position.z -= speed; moved = true; }
-//     //     if (inputMap["a"]) { mesh.position.x -= speed; moved = true; }
-//     //     if (inputMap["d"]) { mesh.position.x += speed; moved = true; }
-
-//     //     if (moved) {
-//     //         onMove(mesh.position, mesh.rotation);
-//     //     }
-//     // });
-// }
-
-// VERSI BERSIH: Cukup terima 'scene' saja
-function setupInput(scene: BABYLON.Scene) {
-    // PENTING: Jangan pakai 'const' di sini! 
-    // Biarkan dia pakai inputMap global yang sudah Om buat di paling atas file.
-
+function setupInput(scene: BABYLON.Scene, mesh: BABYLON.AbstractMesh, onMove: (p: any, r: any) => void) {
+    const inputMap: any = {};
     scene.actionManager = new BABYLON.ActionManager(scene);
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
+        inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
+    }));
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, (evt) => {
+        inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
+    }));
 
-    // Deteksi Tombol Ditekan
-    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
-        BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
-            inputMap[evt.sourceEvent.key.toLowerCase()] = true;
+    scene.onBeforeRenderObservable.add(() => {
+        let moved = false;
+        const speed = 0.1;
+
+        if (inputMap["w"]) { mesh.position.z += speed; moved = true; }
+        if (inputMap["s"]) { mesh.position.z -= speed; moved = true; }
+        if (inputMap["a"]) { mesh.position.x -= speed; moved = true; }
+        if (inputMap["d"]) { mesh.position.x += speed; moved = true; }
+
+        if (moved) {
+            onMove(mesh.position, mesh.rotation);
         }
-    ));
-
-    // Deteksi Tombol Dilepas
-    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
-        BABYLON.ActionManager.OnKeyUpTrigger, (evt) => {
-            inputMap[evt.sourceEvent.key.toLowerCase()] = false;
-        }
-    ));
-
-    // SEMUA KODE DI BAWAH INI (onBeforeRenderObservable) 
-    // BOLEH DIHAPUS ATAU DI-COMMENT PERMANEN.
+    });
 }
 
 // Jalankan aplikasi setelah window load

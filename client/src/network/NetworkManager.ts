@@ -97,6 +97,14 @@ export class NetworkManager {
         //         }
         //     });
         // });
+
+        // --- PASANG TELINGA PENGUMUMAN DISINI ---
+        this.socket.on('announcement', (message: string) => {
+            console.log("📢 Pesan Admin masuk:", message);
+            // Pakai alert supaya murid langsung 'ngeh'
+            alert("📢 PENGUMUMAN GURU:\n\n" + message);
+        });
+
         this.socket.on('currentPlayers', (players: any) => {
             console.log("Menerima daftar absen dari server:", players);
 
@@ -249,7 +257,7 @@ export class NetworkManager {
             if (currentEl) currentEl.innerText = data.current.toString();
             if (maxEl) maxEl.innerText = data.max.toString();
         });
-        
+
         // Listener untuk pesan error (jika ditendang)
         this.socket.on('error_message', (data: { title: string, message: string }) => {
             alert(`${data.title}\n\n${data.message}`);

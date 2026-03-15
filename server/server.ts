@@ -61,12 +61,7 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// --- Endpoint API untuk ambil data user real-time ---
-app.get('/api/admin/users', (req, res) => {
-    // Sederhanakan data Map agar bisa dikirim sebagai JSON
-    const users = Array.from(activeUsers.values());
-    res.json(users);
-});
+
 
 
 // 4. SOCKET.IO CONFIG
@@ -91,6 +86,14 @@ const broadcastCapacity = () => {
     });
     console.log(`📊 Kapasitas Update: ${studentCount}/${MAX_STUDENTS}`);
 };
+
+// --- Endpoint API untuk ambil data user real-time ---
+app.get('/api/admin/users', (req, res) => {
+    // Sederhanakan data Map agar bisa dikirim sebagai JSON
+    const users = Array.from(activeUsers.values());
+    res.json(users);
+});
+
 io.on('connection', (socket: any) => {
     console.log(`🔌 Handshake: ${socket.id}`);
     // Aksi Admin: Kick User

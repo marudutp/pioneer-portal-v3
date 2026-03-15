@@ -115,6 +115,18 @@
             border: 2px solid rgba(255, 255, 255, 0.4);
             touch-action: none;
         }
+
+        /* Supaya tulisan kapasitas gak kegeser-geser */
+        #capacity-indicator {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Supaya canvas gak goyang pas di-swipe jempol */
+        #renderCanvas {
+            touch-action: none;
+            -webkit-user-select: none;
+        }
     </style>
 </head>
 

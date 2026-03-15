@@ -221,23 +221,35 @@ export class NetworkManager {
             }
         });
 
+        // this.socket.on('capacityUpdate', (data: { current: number, max: number }) => {
+        //     const currentEl = document.getElementById('current-cap');
+        //     const maxEl = document.getElementById('max-cap');
+
+        //     if (currentEl && maxEl) {
+        //         currentEl.innerText = data.current.toString();
+        //         maxEl.innerText = data.max.toString();
+
+        //         // Kasih efek warna merah kalau sudah mau penuh
+        //         const indicator = document.getElementById('capacity-indicator');
+        //         if (indicator) {
+        //             indicator.style.color = data.current >= data.max ? '#ff0000' : '#00ff00';
+        //             indicator.style.borderColor = data.current >= data.max ? '#ff0000' : '#00ff00';
+        //         }
+        //     }
+        // });
+
+        // DI SISI CLIENT (NetworkManager.ts atau main.ts)
         this.socket.on('capacityUpdate', (data: { current: number, max: number }) => {
+            console.log("Menerima update kapasitas:", data);
+
+            // Cari elemen span yang ada di index.html Om
             const currentEl = document.getElementById('current-cap');
             const maxEl = document.getElementById('max-cap');
 
-            if (currentEl && maxEl) {
-                currentEl.innerText = data.current.toString();
-                maxEl.innerText = data.max.toString();
-
-                // Kasih efek warna merah kalau sudah mau penuh
-                const indicator = document.getElementById('capacity-indicator');
-                if (indicator) {
-                    indicator.style.color = data.current >= data.max ? '#ff0000' : '#00ff00';
-                    indicator.style.borderColor = data.current >= data.max ? '#ff0000' : '#00ff00';
-                }
-            }
+            if (currentEl) currentEl.innerText = data.current.toString();
+            if (maxEl) maxEl.innerText = data.max.toString();
         });
-
+        
         // Listener untuk pesan error (jika ditendang)
         this.socket.on('error_message', (data: { title: string, message: string }) => {
             alert(`${data.title}\n\n${data.message}`);

@@ -114,7 +114,7 @@ async function bootstrap() {
 
         const mobileUI = document.getElementById("mobile-controls");
         if (mobileUI) mobileUI.style.display = "flex";
-
+        BABYLON.VirtualJoystick.Canvas = canvas;
         const leftJoystick = new BABYLON.VirtualJoystick(true);
         const rightJoystick = new BABYLON.VirtualJoystick(false);
 
@@ -124,7 +124,7 @@ async function bootstrap() {
         scene.onBeforeRenderObservable.add(() => {
 
             if (leftJoystick.pressed && avatarManager.localAvatar) {
-console.log("JOYSTICK ACTIVE", leftJoystick.deltaPosition);
+                console.log("JOYSTICK ACTIVE", leftJoystick.deltaPosition);
                 const moveX = leftJoystick.deltaPosition.x * 5;
                 const moveY = -leftJoystick.deltaPosition.y * 5;
 

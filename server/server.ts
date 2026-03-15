@@ -12,7 +12,10 @@ import cors from 'cors';
 // DETEKSI LEBIH AKURAT
 // const hostname = os.hostname();
 // const isReplit = process.env.REPLIT_ID || process.env.PORT || hostname.includes('replit') || process.cwd().includes('runner');
-
+const ROLES = {
+    TEACHER: 'teacher',
+    STUDENT: 'student'
+};
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();

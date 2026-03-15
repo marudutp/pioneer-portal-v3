@@ -124,7 +124,7 @@ async function bootstrap() {
         scene.onBeforeRenderObservable.add(() => {
 
             if (leftJoystick.pressed && avatarManager.localAvatar) {
-
+console.log("JOYSTICK ACTIVE", leftJoystick.deltaPosition);
                 const moveX = leftJoystick.deltaPosition.x * 5;
                 const moveY = -leftJoystick.deltaPosition.y * 5;
 
@@ -201,11 +201,11 @@ async function bootstrap() {
     window.addEventListener("resize", () => {
         engine.resize();
     });
-    if (!isMobile) {
-        window.addEventListener("pointerdown", () => {
-            engine.enterPointerlock();
-        }, { once: true });
-    }
+    // if (!isMobile) {
+    //     window.addEventListener("pointerdown", () => {
+    //         engine.enterPointerlock();
+    //     }, { once: true });
+    // }
 }
 /**
  * Kontrol Gerakan Sederhana (WASD)

@@ -177,7 +177,7 @@ io.on('connection', (socket: any) => {
     });
 
     socket.on('drawData', (data: any) => {
-        console.log("📡 Server: Menerima coretan, menyebarkan ke seluruh kelas...");
+        // console.log("📡 Server: Menerima coretan, menyebarkan ke seluruh kelas...");
         socket.broadcast.emit('remoteDraw', data);
     });
 

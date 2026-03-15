@@ -139,16 +139,51 @@ export class WhiteboardUI {
         });
     }
 
+    // private createStudentTools() {
+    //     // Siswa cuma dapet tombol Download hasil papan tulis
+    //     this.createButton("💾 Simpan Catatan", "#4CAF50", () => {
+    //         const dataUrl = this.wbManager.getCanvasSnapshot();
+    //         const link = document.createElement("a");
+    //         link.download = "catatan-kelas.png";
+    //         link.href = dataUrl;
+    //         link.click();
+    //     });
+    // }
+
     private createStudentTools() {
-        // Siswa cuma dapet tombol Download hasil papan tulis
-        this.createButton("💾 Simpan Catatan", "#4CAF50", () => {
-            const dataUrl = this.wbManager.getCanvasSnapshot();
-            const link = document.createElement("a");
-            link.download = "catatan-kelas.png";
-            link.href = dataUrl;
-            link.click();
-        });
-    }
+    this.createButton("💾 Simpan Catatan", "#4CAF50", () => {
+        const rawDataUrl = this.wbManager.getCanvasSnapshot();
+        
+        // 1. Buat Image Object untuk menampung data mentah
+        const img = new Image();
+        img.onload = () => {
+            // 2. Buat Canvas bayangan untuk membalikkan gambar
+            const tempCanvas = document.createElement("canvas");
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const ctx = tempCanvas.getContext("2d");
+
+            if (ctx) {
+                // --- JURUS BALIK GAMBAR ---
+                ctx.translate(0, img.height);
+                ctx.scale(1, -1); // Balik sumbu Y (Vertical Flip)
+                ctx.drawImage(img, 0, 0);
+
+                // 3. Ekspor hasil yang sudah tegak lurus
+                const flippedDataUrl = tempCanvas.toDataURL("image/png");
+
+                // 4. Proses Download seperti biasa
+                const link = document.createElement("a");
+                link.download = `catatan-pioneer-${Date.now()}.png`;
+                link.href = flippedDataUrl;
+                link.click();
+                
+                console.log("✅ Gambar sudah tegak lurus, Om!");
+            }
+        };
+        img.src = rawDataUrl;
+    });
+}
 
     private createButton(text: string, bgColor: string, onClick: () => void) {
         const btn = document.createElement("button");

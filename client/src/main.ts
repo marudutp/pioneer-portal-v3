@@ -85,28 +85,34 @@ async function bootstrap() {
     // DI MAIN.TS (Bagian bootstrap)
 
     if (isMobile) {
-    document.getElementById('mobile-controls')!.style.display = 'flex';
+        document.getElementById('mobile-controls')!.style.display = 'flex';
 
-    const leftJoystick = new BABYLON.VirtualJoystick(true);
-    const rightJoystick = new BABYLON.VirtualJoystick(false);
+        const leftJoystick = new BABYLON.VirtualJoystick(true);
+        const rightJoystick = new BABYLON.VirtualJoystick(false);
 
-    scene.onBeforeRenderObservable.add(() => {
-        if (leftJoystick.pressed) {
-            // PANGGIL LEWAT avatarManager DAN KIRIM KAMERA + SOCKET
-            avatarManager.handleAvatarMovement(
-                leftJoystick.deltaPosition.x, 
-                leftJoystick.deltaPosition.y, 
-                scene.activeCamera,     // <--- SETORAN 1
-                networkManager.socket   // <--- SETORAN 2
-            );
-        }
+        scene.onBeforeRenderObservable.add(() => {
+            if (leftJoystick.pressed) {
+                // PANGGIL LEWAT avatarManager DAN KIRIM KAMERA + SOCKET
+                avatarManager.handleAvatarMovement(
+                    leftJoystick.deltaPosition.x,
+                    leftJoystick.deltaPosition.y,
+                    scene.activeCamera,     // <--- SETORAN 1
+                    networkManager.socket   // <--- SETORAN 2
+                );
+            }
 
-        if (rightJoystick.pressed && avatarManager.localAvatar) {
-            // Untuk memutar pandangan kamera/avatar
-            avatarManager.localAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
-        }
-    });
-}
+            if (rightJoystick.pressed && avatarManager.localAvatar) {
+                // Untuk memutar pandangan kamera/avatar
+                avatarManager.localAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
+            }
+        });
+        // Di akhir fungsi bootstrap()
+        window.addEventListener("pointerdown", () => {
+            // Paksa Babylon untuk menangkap pointer
+            engine.enterPointerlock();
+            console.log("📱 Mobile Input Unlocked!");
+        }, { once: true });
+    }
 
     // if (isMobile) {
     //     const mobileUI = document.getElementById('mobile-controls');

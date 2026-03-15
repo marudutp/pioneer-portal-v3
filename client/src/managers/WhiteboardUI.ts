@@ -25,7 +25,7 @@
 //         // --- FITUR KHUSUS GURU ---
 //         if (this.role === ROLES.TEACHER) {
 //             this.addHeader("🛠️ ALAT GURU");
-            
+
 //             this.createButton("⚫ Spidol Hitam", "black", () => {
 //                 // Kamu bisa modifikasi WhiteboardManager agar drawPoint menerima warna
 //                 console.log("Ganti ke spidol hitam");
@@ -46,7 +46,7 @@
 
 //         // --- FITUR UMUM (GURU & MURID) ---
 //         this.addHeader("💾 CATATAN");
-        
+
 //         this.createButton("📷 Simpan Gambar (PNG)", "#27ae60", () => {
 //             const dataUrl = this.wbManager.getCanvasSnapshot();
 //             const link = document.createElement('a');
@@ -151,39 +151,45 @@ export class WhiteboardUI {
     // }
 
     private createStudentTools() {
-    this.createButton("💾 Simpan Catatan", "#4CAF50", () => {
-        const rawDataUrl = this.wbManager.getCanvasSnapshot();
-        
-        // 1. Buat Image Object untuk menampung data mentah
-        const img = new Image();
-        img.onload = () => {
-            // 2. Buat Canvas bayangan untuk membalikkan gambar
-            const tempCanvas = document.createElement("canvas");
-            tempCanvas.width = img.width;
-            tempCanvas.height = img.height;
-            const ctx = tempCanvas.getContext("2d");
+        this.createButton("💾 Simpan Catatan", "#4CAF50", () => {
+            const rawDataUrl = this.wbManager.getCanvasSnapshot();
 
-            if (ctx) {
-                // --- JURUS BALIK GAMBAR ---
-                ctx.translate(0, img.height);
-                ctx.scale(1, -1); // Balik sumbu Y (Vertical Flip)
-                ctx.drawImage(img, 0, 0);
+            // 1. Buat Image Object untuk menampung data mentah
+            const img = new Image();
+            img.onload = () => {
+                // 2. Buat Canvas bayangan untuk membalikkan gambar
+                const tempCanvas = document.createElement("canvas");
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                const ctx = tempCanvas.getContext("2d");
 
-                // 3. Ekspor hasil yang sudah tegak lurus
-                const flippedDataUrl = tempCanvas.toDataURL("image/png");
+                if (ctx) {
+                    // --- JURUS BALIK GAMBAR ---
+                    // --- JURUS ANTI-MIRROR & ANTI-TERBALIK ---
+                    // 1. Geser titik pusat ke pojok kanan bawah
+                    ctx.translate(img.width, img.height);
 
-                // 4. Proses Download seperti biasa
-                const link = document.createElement("a");
-                link.download = `catatan-pioneer-${Date.now()}.png`;
-                link.href = flippedDataUrl;
-                link.click();
-                
-                console.log("✅ Gambar sudah tegak lurus, Om!");
-            }
-        };
-        img.src = rawDataUrl;
-    });
-}
+                    // 2. Balikkan sumbu X (-1) dan sumbu Y (-1)
+                    ctx.scale(-1, -1);
+
+                    // 3. Gambar ulang
+                    ctx.drawImage(img, 0, 0);
+
+                    // 3. Ekspor hasil yang sudah tegak lurus
+                    const flippedDataUrl = tempCanvas.toDataURL("image/png");
+
+                    // 4. Proses Download seperti biasa
+                    const link = document.createElement("a");
+                    link.download = `catatan-pioneer-${Date.now()}.png`;
+                    link.href = flippedDataUrl;
+                    link.click();
+
+                    console.log("✅ Gambar sudah tegak lurus, Om!");
+                }
+            };
+            img.src = rawDataUrl;
+        });
+    }
 
     private createButton(text: string, bgColor: string, onClick: () => void) {
         const btn = document.createElement("button");

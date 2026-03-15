@@ -84,29 +84,65 @@ async function bootstrap() {
 
     // DI MAIN.TS (Bagian bootstrap)
 
+    // if (isMobile) {
+    //     document.getElementById('mobile-controls')!.style.display = 'flex';
+
+    //     const leftJoystick = new BABYLON.VirtualJoystick(true);
+    //     const rightJoystick = new BABYLON.VirtualJoystick(false);
+
+    //     scene.onBeforeRenderObservable.add(() => {
+    //         if (leftJoystick.pressed) {
+    //             // PANGGIL LEWAT avatarManager DAN KIRIM KAMERA + SOCKET
+    //             avatarManager.handleAvatarMovement(
+    //                 leftJoystick.deltaPosition.x,
+    //                 leftJoystick.deltaPosition.y,
+    //                 scene.activeCamera,     // <--- SETORAN 1
+    //                 networkManager.socket   // <--- SETORAN 2
+    //             );
+    //         }
+
+    //         if (rightJoystick.pressed && avatarManager.localAvatar) {
+    //             // Untuk memutar pandangan kamera/avatar
+    //             avatarManager.localAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
+    //         }
+    //     });
+
+    // }
+
+    //chatgpt edit 15032026
     if (isMobile) {
-        document.getElementById('mobile-controls')!.style.display = 'flex';
+
+        const mobileUI = document.getElementById("mobile-controls");
+        if (mobileUI) mobileUI.style.display = "flex";
 
         const leftJoystick = new BABYLON.VirtualJoystick(true);
         const rightJoystick = new BABYLON.VirtualJoystick(false);
 
+        leftJoystick.setJoystickSensibility(0.15);
+        rightJoystick.setJoystickSensibility(0.15);
+
         scene.onBeforeRenderObservable.add(() => {
-            if (leftJoystick.pressed) {
-                // PANGGIL LEWAT avatarManager DAN KIRIM KAMERA + SOCKET
+
+            if (leftJoystick.pressed && avatarManager.localAvatar) {
+
+                const moveX = leftJoystick.deltaPosition.x * 5;
+                const moveY = -leftJoystick.deltaPosition.y * 5;
+
                 avatarManager.handleAvatarMovement(
-                    leftJoystick.deltaPosition.x,
-                    leftJoystick.deltaPosition.y,
-                    scene.activeCamera,     // <--- SETORAN 1
-                    networkManager.socket   // <--- SETORAN 2
+                    moveX,
+                    moveY,
+                    scene.activeCamera,
+                    networkManager.socket
                 );
             }
 
             if (rightJoystick.pressed && avatarManager.localAvatar) {
-                // Untuk memutar pandangan kamera/avatar
-                avatarManager.localAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
-            }
-        });
 
+                avatarManager.localAvatar.rotation.y +=
+                    rightJoystick.deltaPosition.x * 0.05;
+            }
+
+        });
     }
 
     // if (isMobile) {
@@ -165,12 +201,11 @@ async function bootstrap() {
     window.addEventListener("resize", () => {
         engine.resize();
     });
-    // Di akhir fungsi bootstrap()
-    window.addEventListener("pointerdown", () => {
-        // Paksa Babylon untuk menangkap pointer
-        engine.enterPointerlock();
-        console.log("📱 Mobile Input Unlocked!");
-    }, { once: true });
+    if (!isMobile) {
+        window.addEventListener("pointerdown", () => {
+            engine.enterPointerlock();
+        }, { once: true });
+    }
 }
 /**
  * Kontrol Gerakan Sederhana (WASD)

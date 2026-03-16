@@ -8,7 +8,7 @@ import path from 'path';
 import { ROLES, NETWORK_EVENTS } from "../shared/constants.ts";
 import os from 'os';
 import cors from 'cors';
-const multer = require('multer');
+import multer from 'multer';
 
 // DETEKSI LEBIH AKURAT
 // const hostname = os.hostname();
@@ -20,7 +20,22 @@ const app = express();
 // --- Tambahkan di bagian atas bersama import lainnya ---
 const ADMIN_UID = "PjSNNdrP0DP0PddcE7wElgSkppE3"; // Ganti dengan UID Firebase Om
 
+const uploadDir = path.join(__dirname, 'public/presentations');
 
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `slide-${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+
+const upload = multer({ storage });
 // 1. PASANG CORS DI EXPRESS (WAJIB biar gak 502/403)
 app.use(cors({
     // origin: ["https://pioneer-portal-v3.vercel.app", "http://localhost:5000"],

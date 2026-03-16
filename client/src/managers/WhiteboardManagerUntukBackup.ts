@@ -262,21 +262,4 @@ export class WhiteboardManager {
 
     //     this.texture.update();
     // }
-    public async displaySlide(url: string) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous"; // Penting untuk fitur "Simpan Catatan" agar tidak error CORS
-        img.onload = () => {
-            // Kita timpa canvas yang ada (Hybrid Mode)
-            // Jika ingin coretan lama hilang, pakai clearRect. Jika ingin slide jadi background, jangan clear.
-            this.context.clearRect(0, 0, 2048, 1024);
-            this.context.drawImage(img, 0, 0, 2048, 1024);
-            this.texture.update();
-            console.log("✅ Slide terpasang di Whiteboard!");
-            resolve(true);
-        };
-        img.onerror = reject;
-        img.src = url;
-    });
-}
 }

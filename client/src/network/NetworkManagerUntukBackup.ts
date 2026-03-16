@@ -17,9 +17,6 @@ export class NetworkManager {
     private whiteboardManager: WhiteboardManager | null = null;
     public localUid: string = "";
     public role: string = "";
-    // Di dalam class NetworkManager
-
-    // Fungsi untuk mendaftarkan manager dari main.ts
 
     constructor(serverUrl: string, avatarManager: AvatarManager) {
         this.avatarManager = avatarManager;
@@ -36,7 +33,6 @@ export class NetworkManager {
         this.whiteboardManager = wb;
         console.log("📡 NetworkManager sekarang terhubung ke Papan Tulis!");
     }
-
     public joinClass(uid: string, displayName: string, role: string) {
         this.localUid = uid;
         this.socket.emit(NETWORK_EVENTS.AUTH_JOIN, { uid, displayName, role });
@@ -181,15 +177,6 @@ export class NetworkManager {
         });
 
 
-        this.socket.on("update-whiteboard-slide", (data: { slideUrl: string }) => {
-            // Pastikan manager tidak null
-            if (this.whiteboardManager && data && data.slideUrl) {
-                this.whiteboardManager.displaySlide(data.slideUrl);
-            } else {
-                console.warn("⚠️ Gagal update slide: Manager atau Data kosong.");
-            }
-        });
-
 
         // this.socket.on("remoteDraw", (data: any) => {
         //     if (this.whiteboardManager) {
@@ -271,17 +258,6 @@ export class NetworkManager {
             if (maxEl) maxEl.innerText = data.max.toString();
         });
 
-        // Tambahkan listener untuk update slide dari Admin
-        this.socket.on("update-whiteboard-2", (data: { slideUrl: string }) => {
-            console.log("📺 Mendapat update slide:", data.slideUrl);
-
-            // Cek apakah managernya sudah duduk di kursinya
-            if (this.whiteboardManager) {
-                this.whiteboardManager.displaySlide(data.slideUrl);
-            } else {
-                console.warn("⚠️ WhiteboardManager belum terdaftar di NetworkManager");
-            }
-        });
         // Listener untuk pesan error (jika ditendang)
         this.socket.on('error_message', (data: { title: string, message: string }) => {
             alert(`${data.title}\n\n${data.message}`);

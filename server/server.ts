@@ -8,6 +8,7 @@ import path from 'path';
 import { ROLES, NETWORK_EVENTS } from "../shared/constants.ts";
 import os from 'os';
 import cors from 'cors';
+const multer = require('multer');
 
 // DETEKSI LEBIH AKURAT
 // const hostname = os.hostname();
@@ -61,6 +62,8 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// Membuat folder public dapat diakses lewat browser/client
+app.use('/presentations', express.static('public/presentations'));
 
 
 

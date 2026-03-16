@@ -95,11 +95,17 @@ const io = new Server(server, {
 
 app.post('/upload-material', upload.single('slide'), (req, res) => {
     try {
-        if (!req.file) {
+        if (!(req as any).file) {
             return res.status(400).json({ success: false, message: 'File tidak ditemukan' });
         }
 
-        const fileUrl = `${req.protocol}://${req.get('host')}/presentations/${req.file.filename}`;
+        const file = (req as any).file;
+        // Di server.ts Replit bagian endpoint upload
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        const host = req.get('host');
+        const fileUrl = `https://${host}/presentations/${req.file.filename}`;
+        // Paksa HTTPS di atas agar Vercel tidak memblokir gambar
+        // const fileUrl = `${req.protocol}://${req.get('host')}/presentations/${req.file.filename}`;
         console.log("🚀 File berhasil disimpan:", fileUrl);
 
         // Kembalikan JSON (Bukan HTML!)

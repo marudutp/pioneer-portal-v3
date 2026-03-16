@@ -83,85 +83,85 @@ export class WhiteboardManager {
 
     private setupDrawing() {
 
-    this.scene.onPointerObservable.add((pointerInfo) => {
+        this.scene.onPointerObservable.add((pointerInfo) => {
 
-        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
+            if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
 
-            const pick = this.scene.pick(
-                this.scene.pointerX,
-                this.scene.pointerY
-            );
+                const pick = this.scene.pick(
+                    this.scene.pointerX,
+                    this.scene.pointerY
+                );
 
-            if (pick?.hit && pick.pickedMesh === this.mesh) {
+                if (pick?.hit && pick.pickedMesh === this.mesh) {
 
-                this.isDrawing = true;
+                    this.isDrawing = true;
 
-                if (this.scene.activeCamera) {
-                    const canvas = this.scene.getEngine().getRenderingCanvas();
-                    this.scene.activeCamera.detachControl(canvas);
+                    if (this.scene.activeCamera) {
+                        const canvas = this.scene.getEngine().getRenderingCanvas();
+                        this.scene.activeCamera.detachControl(canvas);
+                    }
+
+                    const uv = pick.getTextureCoordinates();
+
+                    if (!uv) return;
+
+                    this.lastX = uv.x * 2048;
+                    this.lastY = (1 - uv.y) * 1024;
                 }
+            }
+
+            if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE && this.isDrawing) {
+
+                const pick = this.scene.pick(
+                    this.scene.pointerX,
+                    this.scene.pointerY
+                );
+
+                if (!pick?.hit || pick.pickedMesh !== this.mesh) return;
 
                 const uv = pick.getTextureCoordinates();
-
                 if (!uv) return;
 
-                this.lastX = uv.x * 2048;
-                this.lastY = (1 - uv.y) * 1024;
-            }
-        }
+                const currentX = uv.x * 2048;
+                const currentY = (1 - uv.y) * 1024;
 
-        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE && this.isDrawing) {
+                if (this.lastX !== null && this.lastY !== null) {
 
-            const pick = this.scene.pick(
-                this.scene.pointerX,
-                this.scene.pointerY
-            );
-
-            if (!pick?.hit || pick.pickedMesh !== this.mesh) return;
-
-            const uv = pick.getTextureCoordinates();
-            if (!uv) return;
-
-            const currentX = uv.x * 2048;
-            const currentY = (1 - uv.y) * 1024;
-
-            if (this.lastX !== null && this.lastY !== null) {
-
-                this.drawLocally(
-                    this.lastX,
-                    this.lastY,
-                    currentX,
-                    currentY,
-                    this.currentColor,
-                    this.currentSize
-                );
-                this.network.sendDrawData({
+                    this.drawLocally(
+                        this.lastX,
+                        this.lastY,
+                        currentX,
+                        currentY,
+                        this.currentColor,
+                        this.currentSize
+                    );
+                    this.network.sendDrawData({
                         x1: this.lastX, y1: this.lastY,
                         x2: currentX, y2: currentY,
                         color: this.currentColor,
                         size: this.currentSize
                     });
+                }
+
+                this.lastX = currentX;
+                this.lastY = currentY;
             }
 
-            this.lastX = currentX;
-            this.lastY = currentY;
-        }
+            if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
 
-        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
+                this.isDrawing = false;
 
-            this.isDrawing = false;
+                this.lastX = null;
+                this.lastY = null;
 
-            this.lastX = null;
-            this.lastY = null;
-
-            if (this.scene.activeCamera) {
-                const canvas = this.scene.getEngine().getRenderingCanvas();
-                this.scene.activeCamera.attachControl(canvas, true);
+                if (this.scene.activeCamera) {
+                    const canvas = this.scene.getEngine().getRenderingCanvas();
+                    this.scene.activeCamera.attachControl(canvas, true);
+                }
             }
-        }
 
-    });
-}
+        });
+    }
     // Fungsi gambar garis (Siswa & Guru pakai fungsi yang sama)
     // public drawLocally(x1: number, y1: number, x2: number, y2: number, color: string, size: number) {
     //     const ctx = this.context;
@@ -262,21 +262,24 @@ export class WhiteboardManager {
 
     //     this.texture.update();
     // }
+    public getNetwork() {
+        return this.network;
+    }
     public async displaySlide(url: string) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous"; // Penting untuk fitur "Simpan Catatan" agar tidak error CORS
-        img.onload = () => {
-            // Kita timpa canvas yang ada (Hybrid Mode)
-            // Jika ingin coretan lama hilang, pakai clearRect. Jika ingin slide jadi background, jangan clear.
-            this.context.clearRect(0, 0, 2048, 1024);
-            this.context.drawImage(img, 0, 0, 2048, 1024);
-            this.texture.update();
-            console.log("✅ Slide terpasang di Whiteboard!");
-            resolve(true);
-        };
-        img.onerror = reject;
-        img.src = url;
-    });
-}
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous"; // Penting untuk fitur "Simpan Catatan" agar tidak error CORS
+            img.onload = () => {
+                // Kita timpa canvas yang ada (Hybrid Mode)
+                // Jika ingin coretan lama hilang, pakai clearRect. Jika ingin slide jadi background, jangan clear.
+                this.context.clearRect(0, 0, 2048, 1024);
+                this.context.drawImage(img, 0, 0, 2048, 1024);
+                this.texture.update();
+                console.log("✅ Slide terpasang di Whiteboard!");
+                resolve(true);
+            };
+            img.onerror = reject;
+            img.src = url;
+        });
+    }
 }

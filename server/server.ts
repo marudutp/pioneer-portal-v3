@@ -101,7 +101,7 @@ app.post('/upload-material', upload.single('slide'), (req, res) => {
 
         const fileUrl = `${req.protocol}://${req.get('host')}/presentations/${req.file.filename}`;
         console.log("🚀 File berhasil disimpan:", fileUrl);
-        
+
         // Kembalikan JSON (Bukan HTML!)
         res.json({ success: true, url: fileUrl });
     } catch (error) {
@@ -146,7 +146,12 @@ io.on('connection', (socket: any) => {
             }, 1000);
         }
     });
-
+    //Broadcast Berjalan    
+    socket.on("admin-change-slide", (data) => {
+        console.log("📢 Memancarkan slide baru ke semua murid:", data.slideUrl);
+        // Menggunakan io.emit agar SEMUA orang (termasuk murid) menerima
+        io.emit("update-whiteboard-slide", data);
+    });
     // Aksi Admin: Broadcast
     socket.on('admin_broadcast', (message: string) => {
         io.emit('announcement', message);

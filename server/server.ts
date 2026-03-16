@@ -78,7 +78,8 @@ app.get('/admin', (req, res) => {
 });
 
 // Membuat folder public dapat diakses lewat browser/client
-app.use('/presentations', express.static('public/presentations'));
+// app.use('/presentations', express.static('public/presentations'));
+app.use('/presentations', express.static(path.join(__dirname, 'public/presentations')));
 
 
 
@@ -92,6 +93,22 @@ const io = new Server(server, {
     transports: ['polling', 'websocket']
 });
 
+app.post('/upload-material', upload.single('slide'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'File tidak ditemukan' });
+        }
+
+        const fileUrl = `${req.protocol}://${req.get('host')}/presentations/${req.file.filename}`;
+        console.log("🚀 File berhasil disimpan:", fileUrl);
+        
+        // Kembalikan JSON (Bukan HTML!)
+        res.json({ success: true, url: fileUrl });
+    } catch (error) {
+        console.error("❌ Error Server:", error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 const activeUsers = new Map();
 let currentTeacherId: string | null = null;
 // 1. Tentukan batas maksimal di bagian atas (di luar io.on)

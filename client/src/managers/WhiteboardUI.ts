@@ -138,37 +138,37 @@ export class WhiteboardUI {
             }
         });
         // Alat Presentasi (Upload Slide)
-    this.createButton("🖼️ Upload Slide", "#8e44ad", () => {
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = "image/*";
-        
-        fileInput.onchange = async (e: any) => {
-            const file = e.target.files[0];
-            if (!file) return;
+        this.createButton("🖼️ Upload Slide", "#8e44ad", () => {
+            const fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.accept = "image/*";
 
-            const formData = new FormData();
-            formData.append('slide', file);
+            fileInput.onchange = async (e: any) => {
+                const file = e.target.files[0];
+                if (!file) return;
 
-            try {
-                // Mengambil URL server dari environment atau config
-                const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/upload-material`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
+                const formData = new FormData();
+                formData.append('slide', file);
 
-                if (data.success) {
-                    // Tampilkan di local dan broadcast ke murid
-                    this.wbManager.displaySlide(data.url);
-                    this.wbManager.getNetwork().socket.emit("admin-change-slide", { slideUrl: data.url });
+                try {
+                    // Mengambil URL server dari environment atau config
+                    const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/upload-material`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Tampilkan di local dan broadcast ke murid
+                        this.wbManager.displaySlide(data.url);
+                        this.wbManager.getNetwork().socket.emit("admin-change-slide", { slideUrl: data.url });
+                    }
+                } catch (err) {
+                    console.error("Gagal upload slide:", err);
                 }
-            } catch (err) {
-                console.error("Gagal upload slide:", err);
-            }
-        };
-        fileInput.click();
-    });
+            };
+            fileInput.click();
+        });
     }
 
     // private createStudentTools() {
@@ -252,29 +252,82 @@ export class WhiteboardUI {
         this.container.style.gap = "10px";
     }
 
+    // private async handleSlideUpload(file: File) {
+    //     const formData = new FormData();
+    //     formData.append('slide', file);
+
+    //     try {
+    //         // 1. Upload ke Replit
+    //         const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/upload-material`, {
+    //             method: 'POST',
+    //             body: formData
+    //         });
+    //         const data = await response.json();
+
+    //         if (data.success) {
+    //             // 2. Tampilkan di layar Guru sendiri
+    //             await this.wbManager.displaySlide(data.url);
+
+    //             // 3. Broadcast ke semua Siswa melalui NetworkManager/Socket
+    //             // Asumsi: networkManager punya fungsi sendSlideUpdate
+    //             (this.wbManager as any).network.socket.emit("admin-change-slide", { slideUrl: data.url });
+    //         }
+    //     } catch (error) {
+    //         console.error("Gagal menjahit slide:", error);
+    //         alert("Gagal mengupload materi!");
+    //     }
+    // }
     private async handleSlideUpload(file: File) {
         const formData = new FormData();
         formData.append('slide', file);
 
+        // Pastikan URL tidak memiliki double slash di tengah
+        const baseUrl = import.meta.env.VITE_SERVER_URL?.replace(/\/$/, "");
+        const uploadUrl = `${baseUrl}/upload-material`;
+
+        console.log("🚀 Mengirim materi ke:", uploadUrl);
+
         try {
-            // 1. Upload ke Replit
-            const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/upload-material`, {
+            const response = await fetch(uploadUrl, {
                 method: 'POST',
                 body: formData
             });
-            const data = await response.json();
 
-            if (data.success) {
-                // 2. Tampilkan di layar Guru sendiri
-                await this.wbManager.displaySlide(data.url);
+            // Trik Kapten: Ambil teks mentah dulu untuk investigasi jika error
+            const responseText = await response.text();
 
-                // 3. Broadcast ke semua Siswa melalui NetworkManager/Socket
-                // Asumsi: networkManager punya fungsi sendSlideUpdate
-                (this.wbManager as any).network.socket.emit("admin-change-slide", { slideUrl: data.url });
+            try {
+                const data = JSON.parse(responseText);
+
+                if (data.success) {
+                    console.log("✅ Berhasil upload, URL:", data.url);
+
+                    // 1. Tampilkan di Whiteboard lokal (Guru)
+                    // Pastikan fungsi displaySlide sudah ada di WhiteboardManager.ts
+                    if ((this.wbManager as any).displaySlide) {
+                        await (this.wbManager as any).displaySlide(data.url);
+                    }
+
+                    // 2. Broadcast ke semua Siswa
+                    // Kita gunakan akses network yang ada di WhiteboardManager
+                    const network = (this.wbManager as any).network;
+                    if (network && network.socket) {
+                        network.socket.emit("admin-change-slide", { slideUrl: data.url });
+                        console.log("📡 Sinyal slide dikirim ke semua siswa!");
+                    }
+                } else {
+                    console.error("❌ Server nolak upload:", data.message);
+                    alert("Server menolak file: " + (data.message || "Unknown error"));
+                }
+            } catch (jsonError) {
+                // Jika masuk ke sini, berarti responseText isinya HTML (Error 404/500)
+                console.error("🔥 Error JSON Parsing. Isi respon server:", responseText);
+                alert("Gagal upload! Server memberikan respon HTML, kemungkinan Replit Error atau URL salah.");
             }
+
         } catch (error) {
-            console.error("Gagal menjahit slide:", error);
-            alert("Gagal mengupload materi!");
+            console.error("❌ Gagal menjahit slide ke jaringan:", error);
+            alert("Koneksi ke Replit gagal!");
         }
     }
 }

@@ -58,16 +58,16 @@ async function bootstrap() {
 
         // 2. Konfigurasi KTX2 (Untuk kompresi Texture/Gambar 3D)
         // Tanpa ini, file .glb yang diproses dengan KTX2 tidak akan muncul gambarnya
-        (BABYLON.KhronosTextureContainer2 as any).URLConfig = {
-            jsDecoderModule: "https://cdn.babylonjs.com/babylon.ktx2Decoder.js",
-            wasmUASTCToASTC: "https://cdn.babylonjs.com/wasm/uastc_astc.wasm",
-            wasmUASTCToBC7: "https://cdn.babylonjs.com/wasm/uastc_bc7.wasm",
-            wasmUASTCToRGBA_UNORM: "https://cdn.babylonjs.com/wasm/uastc_rgba8_unorm.wasm",
-            wasmUASTCToRGBA_SRGB: "https://cdn.babylonjs.com/wasm/uastc_rgba8_srgb.wasm",
-            wasmMSCTranscoder: "https://cdn.babylonjs.com/wasm/msc_basis_transcoder.wasm",
-            // Fallback untuk browser lama
-            jsMSCTranscoder: "https://cdn.babylonjs.com/babylon.msc_basis_transcoder.js"
-        };
+        // (BABYLON.KhronosTextureContainer2 as any).URLConfig = {
+        //     jsDecoderModule: "https://cdn.babylonjs.com/babylon.ktx2Decoder.js",
+        //     wasmUASTCToASTC: "https://cdn.babylonjs.com/wasm/uastc_astc.wasm",
+        //     wasmUASTCToBC7: "https://cdn.babylonjs.com/wasm/uastc_bc7.wasm",
+        //     wasmUASTCToRGBA_UNORM: "https://cdn.babylonjs.com/wasm/uastc_rgba8_unorm.wasm",
+        //     wasmUASTCToRGBA_SRGB: "https://cdn.babylonjs.com/wasm/uastc_rgba8_srgb.wasm",
+        //     wasmMSCTranscoder: "https://cdn.babylonjs.com/wasm/msc_basis_transcoder.wasm",
+        //     // Fallback untuk browser lama
+        //     jsMSCTranscoder: "https://cdn.babylonjs.com/babylon.msc_basis_transcoder.js"
+        // };
     };
 
     // Panggil fungsi ini sebelum membuat Scene

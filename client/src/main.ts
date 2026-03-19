@@ -46,6 +46,33 @@ async function bootstrap() {
 
     console.log(`Selamat Datang, ${user.displayName}! Anda masuk sebagai: ${user.role}`);
 
+    const setupOptimizations = () => {
+        // 1. Konfigurasi DRACO (Untuk kompresi Mesh/Geometry)
+        BABYLON.DracoCompression.Configuration = {
+            decoder: {
+                wasmUrl: "https://cdn.babylonjs.com/draco_wasm_wrapper_gltf.js",
+                wasmBinaryUrl: "https://cdn.babylonjs.com/draco_decoder_gltf.wasm",
+                fallbackUrl: "https://cdn.babylonjs.com/draco_decoder_gltf.js"
+            }
+        };
+
+        // 2. Konfigurasi KTX2 (Untuk kompresi Texture/Gambar 3D)
+        // Tanpa ini, file .glb yang diproses dengan KTX2 tidak akan muncul gambarnya
+        (BABYLON.KhronosTextureContainer2 as any).URLConfig = {
+            jsDecoderModule: "https://cdn.babylonjs.com/babylon.ktx2Decoder.js",
+            wasmUASTCToASTC: "https://cdn.babylonjs.com/wasm/uastc_astc.wasm",
+            wasmUASTCToBC7: "https://cdn.babylonjs.com/wasm/uastc_bc7.wasm",
+            wasmUASTCToRGBA_UNORM: "https://cdn.babylonjs.com/wasm/uastc_rgba8_unorm.wasm",
+            wasmUASTCToRGBA_SRGB: "https://cdn.babylonjs.com/wasm/uastc_rgba8_srgb.wasm",
+            wasmMSCTranscoder: "https://cdn.babylonjs.com/wasm/msc_basis_transcoder.wasm",
+            // Fallback untuk browser lama
+            jsMSCTranscoder: "https://cdn.babylonjs.com/babylon.msc_basis_transcoder.js"
+        };
+    };
+
+    // Panggil fungsi ini sebelum membuat Scene
+    setupOptimizations();
+
     // 2. Inisialisasi Panggung
     const { scene, engine, canvas } = await createPioneerScene("renderCanvas");
 

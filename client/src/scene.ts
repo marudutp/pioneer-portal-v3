@@ -153,7 +153,7 @@ async function loadEnvironment(scene: Scene) {
             if (camera && root) {
                 const bounding = root.getHierarchyBoundingVectors(true);
 
-                const center = bounding.min.add(bounding.max).scale(0.5);
+                const center = bounding.min.add(bounding.max).scale(0.15);
                 const size = bounding.max.subtract(bounding.min).length();
 
                 camera.setTarget(center);

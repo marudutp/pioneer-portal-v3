@@ -68,7 +68,7 @@ async function bootstrap() {
 
     console.log(`Selamat Datang, ${user.displayName}! Anda masuk sebagai: ${user.role}`);
 
-
+   
 
     // 2. Inisialisasi Panggung
     const { scene, engine, canvas } = await createPioneerScene("renderCanvas");
@@ -90,31 +90,12 @@ async function bootstrap() {
     networkManager.joinClass(user.uid, user.displayName || "Anonim", user.role);
 
     // 6. Buat Avatar Lokal
-    
-    // const myAvatar = avatarManager.createAvatar({
-    //     uid: user.uid,
-    //     displayName: user.displayName || "Saya",
-    //     role: user.role // Pakai role asli dari email
-    // });
-    // avatarManager.localAvatar = myAvatar;
-
     const myAvatar = avatarManager.createAvatar({
         uid: user.uid,
         displayName: user.displayName || "Saya",
-        role: user.role
+        role: user.role // Pakai role asli dari email
     });
-
-    // tunggu avatar GLB selesai load
-    const checkAvatarReady = setInterval(() => {
-        const realAvatar = (avatarManager as any).avatars.get(user.uid);
-
-        if (realAvatar) {
-            avatarManager.localAvatar = realAvatar;
-            clearInterval(checkAvatarReady);
-
-            console.log("✅ Local avatar ready (GLB)");
-        }
-    }, 100);
+    avatarManager.localAvatar = myAvatar;
 
     // 7. Logika Pergerakan (PC/Keyboard)
     setupInput(scene, myAvatar, (pos, rot) => {

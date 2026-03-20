@@ -103,7 +103,7 @@ export class AvatarManager {
             fileName,
             this.scene
         ).then((result) => {
-
+            console.log("🎬 Animations:", result.animationGroups.map(a => a.name));
             // ======================
             // 🔥 PENTING: PAKAI ROOT
             // ======================
@@ -185,7 +185,7 @@ export class AvatarManager {
             // HAPUS DUMMY
             // ======================
             dummy.dispose();
-            console.log("🎬 Animations:", result.animationGroups.map(a => a.name));
+
             console.log("✅ Avatar GLB READY & MOVEABLE:", fileName);
         });
 

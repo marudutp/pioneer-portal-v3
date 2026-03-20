@@ -123,56 +123,29 @@ async function loadEnvironment(scene: Scene) {
         // 2. HITUNG BOUNDING SEKALI
         // =========================
         const bounding = root.getHierarchyBoundingVectors(true);
+        const height = bounding.max.y - bounding.min.y;
 
-        const center = bounding.min.add(bounding.max).scale(0.5);
-        const size = bounding.max.subtract(bounding.min);
+        const targetHeight = 10; // auditorium
+        const scaleFactor = targetHeight / height;
 
-        // =========================
-        // 3. CENTER MODEL
-        // =========================
-        root.position.subtractInPlace(center);
-        console.log("🏛️ REAL SIZE:", size.toString);
-        console.log("📏 HEIGHT:", size.y);
-        // =========================
-        // 4. GROUND ALIGN (biar tidak tenggelam)
-        // =========================
-        root.position.y -= bounding.min.y;
+        root.scaling.setAll(scaleFactor);
+        root.computeWorldMatrix(true);
 
-        // =========================
-        // 5. (OPTIONAL) SCALE — HANYA JIKA PERLU
-        // =========================
-        const height = size.y;
+        console.log("✅ FINAL SCALE:", scaleFactor);
 
-        if (height > 20 || height < 1) {
-            // const targetHeight = 3;
-            // const scaleFactor = targetHeight / height;
+        // const camera = scene.activeCamera as ArcRotateCamera;
 
-            // root.scaling.scaleInPlace(scaleFactor);
-            root.computeWorldMatrix(true);
-
-            // console.log("⚖️ Auto scale applied:", scaleFactor);
-        } else {
-            console.log("✅ Model already correct scale (no scaling)");
-        }
-
-        // =========================
-        // 6. CAMERA FIX
-        // =========================
         const camera = scene.activeCamera as ArcRotateCamera;
 
         if (camera) {
-            // camera.setTarget(Vector3.Zero());
+            camera.setTarget(new BABYLON.Vector3(0, 2, 0)); // eye level
 
-            // const radius = size.length() * 0.6;
-            // camera.radius = Math.max(5, radius);
-            const center = bounding.min.add(bounding.max).scale(0.5);
+            camera.radius = 12;
 
-            camera.setTarget(center);
+            camera.beta = Math.PI / 3;
 
-            // BATASI radius (jangan auto liar)
-            camera.radius = 5;
-
-            console.log("🎥 Camera radius:", camera.radius);
+            camera.lowerRadiusLimit = 5;
+            camera.upperRadiusLimit = 25;
         }
 
         console.log("🏛️ Environment loaded successfully");

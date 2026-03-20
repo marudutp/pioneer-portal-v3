@@ -94,7 +94,7 @@ export class AvatarManager {
             ? "final_yeti.glb"
             : "final_frog.glb";
 
-        // dummy sementara biar tidak crash (karena async)
+        // dummy sementara (biar tidak crash karena async)
         const dummy = BABYLON.MeshBuilder.CreateBox("temp", {}, this.scene);
 
         BABYLON.SceneLoader.ImportMeshAsync(
@@ -104,52 +104,58 @@ export class AvatarManager {
             this.scene
         ).then((result) => {
 
-            const mesh = result.meshes.find(m => m.getTotalVertices() > 0) || result.meshes[0];
+            // ======================
+            // 🔥 PENTING: PAKAI ROOT
+            // ======================
+            const root = result.meshes[0];
+            const visual = result.meshes.find(m => m.getTotalVertices() > 0);
 
-            mesh.name = user.uid;
+            root.name = user.uid;
 
             // ======================
             // POSISI
             // ======================
-            mesh.position.x = user.x || (Math.random() * 4 - 2);
-            mesh.position.z = user.z || (Math.random() * 4 - 2);
+            root.position.x = user.x || (Math.random() * 4 - 2);
+            root.position.z = user.z || (Math.random() * 4 - 2);
 
             // ======================
-            // AUTO SCALE
+            // AUTO SCALE (pakai visual mesh)
             // ======================
-            const bbox = mesh.getBoundingInfo().boundingBox;
-            let height = bbox.extendSize.y * 2;
+            if (visual) {
+                const bbox = visual.getBoundingInfo().boundingBox;
+                let height = bbox.extendSize.y * 2;
 
-            if (!height || height < 0.001) height = 1;
+                if (!height || height < 0.001) height = 1;
 
-            const targetHeight = 1.7;
-            let scale = targetHeight / height;
+                const targetHeight = 1.7;
+                let scale = targetHeight / height;
 
-            scale = Math.min(Math.max(scale, 0.5), 3);
+                scale = Math.min(Math.max(scale, 0.5), 3);
 
-            mesh.scaling.setAll(scale);
+                root.scaling.setAll(scale);
+            }
 
             // ======================
             // GROUND FIX
             // ======================
-            mesh.computeWorldMatrix(true);
+            root.computeWorldMatrix(true);
 
-            const bboxWorld = mesh.getBoundingInfo().boundingBox;
-            const footY = bboxWorld.minimumWorld.y;
+            const bboxWorld = root.getHierarchyBoundingVectors(true);
+            const footY = bboxWorld.min.y;
 
-            mesh.position.y += -footY + 0.05;
-
-            // ======================
-            // COLLISION
-            // ======================
-            mesh.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
-            mesh.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
-
-            mesh.checkCollisions = true;
-            mesh.applyGravity = true;
+            root.position.y += -footY + 0.05;
 
             // ======================
-            // ANIMATIONS (AUTO REGISTER)
+            // COLLISION (WAJIB DI ROOT)
+            // ======================
+            root.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
+            root.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
+
+            root.checkCollisions = true;
+            root.applyGravity = true;
+
+            // ======================
+            // ANIMATIONS
             // ======================
             result.animationGroups.forEach(anim => {
                 this.animations.set(anim.name.toLowerCase(), anim);
@@ -159,21 +165,28 @@ export class AvatarManager {
             this.playLocalAnimation("idle", true);
 
             // ======================
-            // NAMETAG
+            // NAMETAG (ke root)
             // ======================
-            this.addNameTag(mesh, user.uid, user.displayName);
+            this.addNameTag(root, user.uid, user.displayName);
 
-            this.avatars.set(user.uid, mesh);
+            // ======================
+            // SIMPAN ROOT (PENTING)
+            // ======================
+            this.avatars.set(user.uid, root);
 
-            // kalau ini avatar lokal → update reference
+            // ======================
+            // LOCAL AVATAR FIX
+            // ======================
             if (user.uid === this.localAvatar?.name || !this.localAvatar) {
-                this.localAvatar = mesh;
+                this.localAvatar = root;
             }
 
-            // hapus dummy
+            // ======================
+            // HAPUS DUMMY
+            // ======================
             dummy.dispose();
 
-            console.log("✅ Avatar GLB loaded:", fileName);
+            console.log("✅ Avatar GLB READY & MOVEABLE:", fileName);
         });
 
         return dummy;

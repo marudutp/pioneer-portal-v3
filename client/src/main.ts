@@ -90,7 +90,7 @@ async function bootstrap() {
     networkManager.joinClass(user.uid, user.displayName || "Anonim", user.role);
 
     // 6. Buat Avatar Lokal
-    
+
     // const myAvatar = avatarManager.createAvatar({
     //     uid: user.uid,
     //     displayName: user.displayName || "Saya",
@@ -253,30 +253,75 @@ async function bootstrap() {
 /**
  * Kontrol Gerakan Sederhana (WASD)
  */
-function setupInput(scene: BABYLON.Scene, mesh: BABYLON.AbstractMesh, onMove: (p: any, r: any) => void) {
+
+// function setupInput(scene: BABYLON.Scene, mesh: BABYLON.AbstractMesh, onMove: (p: any, r: any) => void) {
+//     const inputMap: any = {};
+//     scene.actionManager = new BABYLON.ActionManager(scene);
+//     scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
+//         inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
+//     }));
+//     scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, (evt) => {
+//         inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
+//     }));
+
+//     scene.onBeforeRenderObservable.add(() => {
+//         let moved = false;
+//         const speed = 0.1;
+
+//         if (inputMap["w"]) { mesh.position.z += speed; moved = true; }
+//         if (inputMap["s"]) { mesh.position.z -= speed; moved = true; }
+//         if (inputMap["a"]) { mesh.position.x -= speed; moved = true; }
+//         if (inputMap["d"]) { mesh.position.x += speed; moved = true; }
+
+//         if (moved) {
+//             onMove(mesh.position, mesh.rotation);
+//         }
+//     });
+// }
+
+function setupInput(
+    scene: BABYLON.Scene,
+    avatarManager: any,
+    camera: BABYLON.Camera,
+    socket: any
+) {
     const inputMap: any = {};
+
     scene.actionManager = new BABYLON.ActionManager(scene);
-    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
-        inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
-    }));
-    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, (evt) => {
-        inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
-    }));
+
+    scene.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(
+            BABYLON.ActionManager.OnKeyDownTrigger,
+            evt => inputMap[evt.sourceEvent.key.toLowerCase()] = true
+        )
+    );
+
+    scene.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(
+            BABYLON.ActionManager.OnKeyUpTrigger,
+            evt => inputMap[evt.sourceEvent.key.toLowerCase()] = false
+        )
+    );
 
     scene.onBeforeRenderObservable.add(() => {
-        let moved = false;
-        const speed = 0.1;
 
-        if (inputMap["w"]) { mesh.position.z += speed; moved = true; }
-        if (inputMap["s"]) { mesh.position.z -= speed; moved = true; }
-        if (inputMap["a"]) { mesh.position.x -= speed; moved = true; }
-        if (inputMap["d"]) { mesh.position.x += speed; moved = true; }
+        if (!avatarManager.localAvatar) return;
 
-        if (moved) {
-            onMove(mesh.position, mesh.rotation);
-        }
+        let deltaX = 0;
+        let deltaZ = 0;
+
+        if (inputMap["w"]) deltaZ += 1;
+        if (inputMap["s"]) deltaZ -= 1;
+        if (inputMap["a"]) deltaX -= 1;
+        if (inputMap["d"]) deltaX += 1;
+
+        avatarManager.handleAvatarMovement(
+            deltaX,
+            deltaZ,
+            camera,
+            socket
+        );
     });
 }
-
 // Jalankan aplikasi setelah window load
 window.addEventListener("DOMContentLoaded", bootstrap);

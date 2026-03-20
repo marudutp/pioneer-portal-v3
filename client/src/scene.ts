@@ -108,7 +108,22 @@ async function loadEnvironment(scene: Scene) {
 
         // 2. Operasi Plastik: Kecilkan semua mesh agar pas di mata!
         result.meshes.forEach(mesh => {
-            mesh.scaling.setAll(0.2); // Sesuai resep rahasia kamar sebelah
+            // mesh.scaling.setAll(0.2); // Sesuai resep rahasia kamar sebelah
+            const root = result.meshes[0];
+
+            const bounding = root.getHierarchyBoundingVectors(true);
+
+            const height = bounding.max.y - bounding.min.y;
+
+            // target tinggi ruangan (meter)
+            const targetHeight = 3;
+
+            const scaleFactor = targetHeight / height;
+
+            root.scaling.scaleInPlace(scaleFactor);
+            root.computeWorldMatrix(true);
+
+            console.log("Room height:", height, "→ scale:", scaleFactor);
             mesh.checkCollisions = true;
 
             // Tips: Matikan Pickable kalau mesh ini cuma dekorasi agar klik mouse lancar
@@ -123,21 +138,7 @@ async function loadEnvironment(scene: Scene) {
         // }
 
 
-        const root = result.meshes[0];
 
-        const bounding = root.getHierarchyBoundingVectors(true);
-
-        const height = bounding.max.y - bounding.min.y;
-
-        // target tinggi ruangan (meter)
-        const targetHeight = 3;
-
-        const scaleFactor = targetHeight / height;
-
-        root.scaling.scaleInPlace(scaleFactor);
-        root.computeWorldMatrix(true);
-
-        console.log("Room height:", height, "→ scale:", scaleFactor);
 
         // 4. Update Kamera agar tidak terlalu dekat
         // const camera = scene.activeCamera as ArcRotateCamera;

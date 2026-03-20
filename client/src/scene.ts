@@ -100,69 +100,78 @@ import "@babylonjs/loaders/glTF"; // <--- WAJIB: Biar Babylon ngerti file .glb
 async function loadEnvironment(scene: Scene) {
     try {
         new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-        // 1. Pastikan file-nya benar (classroom.glb atau auditorium.glb?)
-        // Sesuaikan dengan nama file yang ada di folder /public/assets/
+
         const fileName = "classroom.glb";
 
-        const result = await SceneLoader.ImportMeshAsync("", "/assets/", fileName, scene);
+        const result = await SceneLoader.ImportMeshAsync(
+            "",
+            "/assets/",
+            fileName,
+            scene
+        );
 
-        // 2. Operasi Plastik: Kecilkan semua mesh agar pas di mata!
+        const root = result.meshes[0];
+
+        // =========================
+        // 1. AKTIFKAN COLLISION
+        // =========================
         result.meshes.forEach(mesh => {
-            // mesh.scaling.setAll(0.2); // Sesuai resep rahasia kamar sebelah
-            const root = result.meshes[0];
+            mesh.checkCollisions = true;
+        });
 
-            const bounding = root.getHierarchyBoundingVectors(true);
+        // =========================
+        // 2. HITUNG BOUNDING SEKALI
+        // =========================
+        const bounding = root.getHierarchyBoundingVectors(true);
 
-            const height = bounding.max.y - bounding.min.y;
+        const center = bounding.min.add(bounding.max).scale(0.5);
+        const size = bounding.max.subtract(bounding.min);
 
-            // target tinggi ruangan (meter)
+        // =========================
+        // 3. CENTER MODEL
+        // =========================
+        root.position.subtractInPlace(center);
+
+        // =========================
+        // 4. GROUND ALIGN (biar tidak tenggelam)
+        // =========================
+        root.position.y -= bounding.min.y;
+
+        // =========================
+        // 5. (OPTIONAL) SCALE — HANYA JIKA PERLU
+        // =========================
+        const height = size.y;
+
+        if (height > 20 || height < 1) {
             const targetHeight = 3;
-
             const scaleFactor = targetHeight / height;
 
             root.scaling.scaleInPlace(scaleFactor);
             root.computeWorldMatrix(true);
 
-            console.log("Room height:", height, "→ scale:", scaleFactor);
-            mesh.checkCollisions = true;
-
-            // Tips: Matikan Pickable kalau mesh ini cuma dekorasi agar klik mouse lancar
-            // mesh.isPickable = false; 
-        });
-
-        // 3. Atur Ketinggian Lantai
-        // const root = result.meshes[0];
-        // if (root) {
-        //     root.position.y = -0.9; // Biar kaki nggak amblas!
-        //     console.log(`🏛️ Gedung ${fileName} berhasil mendarat di posisi Y: -0.9`);
-        // }
-
-
-
-
-        // 4. Update Kamera agar tidak terlalu dekat
-        // const camera = scene.activeCamera as ArcRotateCamera;
-        // if (camera) {
-        //     camera.radius = 15; // Mundur dikit biar kelihatan estetik
-        // }
-        const camera = scene.activeCamera as ArcRotateCamera;
-
-        if (camera && root) {
-            const bounding = root.getHierarchyBoundingVectors(true);
-
-            const center = bounding.min.add(bounding.max).scale(0.5);
-            const size = bounding.max.subtract(bounding.min).length();
-
-            camera.setTarget(center);
-
-            // AUTO ZOOM BERDASARKAN SIZE
-            camera.radius = size * 0.6;
-
-            console.log("Camera radius:", camera.radius);
+            console.log("⚖️ Auto scale applied:", scaleFactor);
+        } else {
+            console.log("✅ Model already correct scale (no scaling)");
         }
 
+        // =========================
+        // 6. CAMERA FIX
+        // =========================
+        const camera = scene.activeCamera as ArcRotateCamera;
+
+        if (camera) {
+            camera.setTarget(Vector3.Zero());
+
+            const radius = size.length() * 0.6;
+            camera.radius = Math.max(5, radius);
+
+            console.log("🎥 Camera radius:", camera.radius);
+        }
+
+        console.log("🏛️ Environment loaded successfully");
+
     } catch (error) {
-        console.error("❌ Waduh, kontraktornya kabur! Gedung gagal dimuat:", error);
+        console.error("❌ Load environment gagal:", error);
     }
 }
 

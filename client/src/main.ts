@@ -117,9 +117,16 @@ async function bootstrap() {
     }, 100);
 
     // 7. Logika Pergerakan (PC/Keyboard)
-    setupInput(scene, myAvatar, (pos, rot) => {
-        networkManager.sendMovement(pos, rot);
-    });
+    // setupInput(scene, myAvatar, (pos, rot) => {
+    //     networkManager.sendMovement(pos, rot);
+    // });
+
+    setupInput(
+        scene,
+        avatarManager,
+        scene.activeCamera as BABYLON.Camera,
+        networkManager.socket
+    );
 
     // --- 7.5 LOGIKA MOBILE (JOYSTICK) ---
     // Deteksi lebih akurat untuk HP & Tablet (termasuk iPad Pro)

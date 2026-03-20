@@ -109,22 +109,39 @@ async function loadEnvironment(scene: Scene) {
         // 2. Operasi Plastik: Kecilkan semua mesh agar pas di mata!
         result.meshes.forEach(mesh => {
             // mesh.scaling.setAll(0.2); // Sesuai resep rahasia kamar sebelah
-            const root = result.meshes[0];
+            // const root = result.meshes[0];
 
-            const bounding = root.getHierarchyBoundingVectors(true);
-            const height = bounding.max.y - bounding.min.y;
+            // const bounding = root.getHierarchyBoundingVectors(true);
+            // const height = bounding.max.y - bounding.min.y;
 
-            const targetHeight = 3; // tinggi ruangan realistis
-            const scaleFactor = targetHeight / height;
+            // const targetHeight = 3; // tinggi ruangan realistis
+            // const scaleFactor = targetHeight / height;
 
-            root.scaling.scaleInPlace(scaleFactor);
-            root.computeWorldMatrix(true);
+            // root.scaling.scaleInPlace(scaleFactor);
+            // root.computeWorldMatrix(true);
 
-            console.log("Room scale fixed:", scaleFactor);
-            mesh.checkCollisions = true;
+            // console.log("Room scale fixed:", scaleFactor);
+            // mesh.checkCollisions = true;
 
             // Tips: Matikan Pickable kalau mesh ini cuma dekorasi agar klik mouse lancar
             // mesh.isPickable = false; 
+            const root = result.meshes[0];
+
+            const bounding = root.getHierarchyBoundingVectors(true);
+
+            // CENTER MODEL
+            const center = bounding.min.add(bounding.max).scale(0.5);
+            root.position.subtractInPlace(center);
+
+            // FIX GROUND
+            root.position.y -= bounding.min.y;
+
+            // CAMERA FIX
+            const camera = scene.activeCamera as ArcRotateCamera;
+            if (camera) {
+                camera.setTarget(Vector3.Zero());
+                camera.radius = 6;
+            }
         });
 
         // 3. Atur Ketinggian Lantai

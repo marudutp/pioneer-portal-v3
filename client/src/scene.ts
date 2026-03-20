@@ -131,7 +131,7 @@ async function loadEnvironment(scene: Scene) {
         // 3. CENTER MODEL
         // =========================
         root.position.subtractInPlace(center);
-
+        console.log("🏛️ REAL SIZE:", size);
         // =========================
         // 4. GROUND ALIGN (biar tidak tenggelam)
         // =========================
@@ -143,13 +143,13 @@ async function loadEnvironment(scene: Scene) {
         const height = size.y;
 
         if (height > 20 || height < 1) {
-            const targetHeight = 3;
-            const scaleFactor = targetHeight / height;
+            // const targetHeight = 3;
+            // const scaleFactor = targetHeight / height;
 
-            root.scaling.scaleInPlace(scaleFactor);
+            // root.scaling.scaleInPlace(scaleFactor);
             root.computeWorldMatrix(true);
 
-            console.log("⚖️ Auto scale applied:", scaleFactor);
+            // console.log("⚖️ Auto scale applied:", scaleFactor);
         } else {
             console.log("✅ Model already correct scale (no scaling)");
         }
@@ -160,10 +160,16 @@ async function loadEnvironment(scene: Scene) {
         const camera = scene.activeCamera as ArcRotateCamera;
 
         if (camera) {
-            camera.setTarget(Vector3.Zero());
+            // camera.setTarget(Vector3.Zero());
 
-            const radius = size.length() * 0.6;
-            camera.radius = Math.max(5, radius);
+            // const radius = size.length() * 0.6;
+            // camera.radius = Math.max(5, radius);
+            const center = bounding.min.add(bounding.max).scale(0.5);
+
+            camera.setTarget(center);
+
+            // BATASI radius (jangan auto liar)
+            camera.radius = 20;
 
             console.log("🎥 Camera radius:", camera.radius);
         }

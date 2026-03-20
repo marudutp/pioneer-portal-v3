@@ -125,22 +125,43 @@ async function loadEnvironment(scene: Scene) {
 
             // Tips: Matikan Pickable kalau mesh ini cuma dekorasi agar klik mouse lancar
             // mesh.isPickable = false; 
+
+
+            // const root = result.meshes[0];
+
+            // const bounding = root.getHierarchyBoundingVectors(true);
+
+            // // CENTER MODEL
+            // const center = bounding.min.add(bounding.max).scale(0.5);
+            // root.position.subtractInPlace(center);
+
+            // // FIX GROUND
+            // root.position.y -= bounding.min.y;
+
             const root = result.meshes[0];
 
-            const bounding = root.getHierarchyBoundingVectors(true);
+            // AKTIFKAN COLLISION
+            result.meshes.forEach(mesh => {
+                mesh.checkCollisions = true;
+            });
 
-            // CENTER MODEL
-            const center = bounding.min.add(bounding.max).scale(0.5);
-            root.position.subtractInPlace(center);
-
-            // FIX GROUND
-            root.position.y -= bounding.min.y;
-
+            // OPTIONAL: sedikit naikkan kalau tenggelam
+            root.position.y = 0;
             // CAMERA FIX
             const camera = scene.activeCamera as ArcRotateCamera;
-            if (camera) {
-                camera.setTarget(Vector3.Zero());
-                camera.radius = 6;
+
+            if (camera && root) {
+                const bounding = root.getHierarchyBoundingVectors(true);
+
+                const center = bounding.min.add(bounding.max).scale(0.5);
+                const size = bounding.max.subtract(bounding.min).length();
+
+                camera.setTarget(center);
+
+                // AUTO ZOOM BERDASARKAN SIZE
+                camera.radius = size * 0.6;
+
+                console.log("Camera radius:", camera.radius);
             }
         });
 

@@ -185,7 +185,7 @@ export class AvatarManager {
             // HAPUS DUMMY
             // ======================
             dummy.dispose();
-
+            console.log("🎬 Animations:", result.animationGroups.map(a => a.name));
             console.log("✅ Avatar GLB READY & MOVEABLE:", fileName);
         });
 

@@ -1,5 +1,5 @@
 import * as BABYLON from "@babylonjs/core";
-import "@babylonjs/loaders"; // Penting kalau mau masukin model 3D (GLB/GLTF)
+// import "@babylonjs/loaders"; // Penting kalau mau masukin model 3D (GLB/GLTF)
 
 export interface SceneData {
     scene: BABYLON.Scene;
@@ -84,13 +84,13 @@ import "@babylonjs/loaders/glTF"; // <--- WAJIB: Biar Babylon ngerti file .glb
 //             "classroom.glb", 
 //             scene
 //         );
-        
+
 //         // Atur agar lantai auditorium bisa nerima bayangan/tabrakan
 //         result.meshes.forEach(mesh => {
 //             mesh.checkCollisions = true;
 //             // Jika kamu butuh mesh tertentu untuk whiteboard, bisa dicari di sini
 //         });
-        
+
 //         console.log("🏛️ Gedung Auditorium Berhasil Dipasang!");
 //     } catch (error) {
 //         console.error("❌ Gagal muat auditorium.glb:", error);
@@ -102,15 +102,27 @@ async function loadEnvironment(scene: Scene) {
         new HemisphericLight("light", new Vector3(0, 1, 0), scene);
         // 1. Pastikan file-nya benar (classroom.glb atau auditorium.glb?)
         // Sesuaikan dengan nama file yang ada di folder /public/assets/
-        const fileName = "classroom.glb"; 
+        const fileName = "classroom.glb";
 
         const result = await SceneLoader.ImportMeshAsync("", "/assets/", fileName, scene);
 
         // 2. Operasi Plastik: Kecilkan semua mesh agar pas di mata!
         result.meshes.forEach(mesh => {
-            mesh.scaling.setAll(0.2); // Sesuai resep rahasia kamar sebelah
+            // mesh.scaling.setAll(0.2); // Sesuai resep rahasia kamar sebelah
+            const root = result.meshes[0];
+
+            const bounding = root.getHierarchyBoundingVectors(true);
+            const height = bounding.max.y - bounding.min.y;
+
+            const targetHeight = 3; // tinggi ruangan realistis
+            const scaleFactor = targetHeight / height;
+
+            root.scaling.scaleInPlace(scaleFactor);
+            root.computeWorldMatrix(true);
+
+            console.log("Room scale fixed:", scaleFactor);
             mesh.checkCollisions = true;
-            
+
             // Tips: Matikan Pickable kalau mesh ini cuma dekorasi agar klik mouse lancar
             // mesh.isPickable = false; 
         });
@@ -148,8 +160,8 @@ export async function createPioneerScene(canvasId: string) {
     const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
     // --- PANGGIL LOAD ENVIRONMENT DI SINI ---
-    await loadEnvironment(scene); 
+    await loadEnvironment(scene);
     // -----------------------------------------
 
-    return { scene, engine, camera,canvas };
+    return { scene, engine, camera, canvas };
 }

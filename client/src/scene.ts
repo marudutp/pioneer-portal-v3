@@ -131,7 +131,8 @@ async function loadEnvironment(scene: Scene) {
         // 3. CENTER MODEL
         // =========================
         root.position.subtractInPlace(center);
-        console.log("🏛️ REAL SIZE:", size);
+        console.log("🏛️ REAL SIZE:", size.toString);
+        console.log("📏 HEIGHT:", size.y);
         // =========================
         // 4. GROUND ALIGN (biar tidak tenggelam)
         // =========================
@@ -169,7 +170,7 @@ async function loadEnvironment(scene: Scene) {
             camera.setTarget(center);
 
             // BATASI radius (jangan auto liar)
-            camera.radius = 20;
+            camera.radius = 12;
 
             console.log("🎥 Camera radius:", camera.radius);
         }

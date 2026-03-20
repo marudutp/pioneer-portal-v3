@@ -285,6 +285,7 @@ function setupInput(
     camera: BABYLON.Camera,
     socket: any
 ) {
+    console.log("✅ setupInput aktif");
     const inputMap: any = {};
 
     scene.actionManager = new BABYLON.ActionManager(scene);
@@ -321,7 +322,8 @@ function setupInput(
             camera,
             socket
         );
-        avatarManager.handleAvatarMovement(0, 1, camera, socket);
+        console.log("🔥 MOVEMENT INPUT:", deltaX, deltaZ);
+        // avatarManager.handleAvatarMovement(0, 1, camera, socket);
     });
 }
 // Jalankan aplikasi setelah window load

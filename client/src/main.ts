@@ -321,6 +321,7 @@ function setupInput(
             camera,
             socket
         );
+        avatarManager.handleAvatarMovement(0, 1, camera, socket);
     });
 }
 // Jalankan aplikasi setelah window load

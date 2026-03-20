@@ -89,6 +89,7 @@ export class AvatarManager {
         } else {
             this.playLocalAnimation("idle");
         }
+        console.log("🔥 MOVEMENT CALLED", deltaX, deltaZ);
     }
 
     // ======================

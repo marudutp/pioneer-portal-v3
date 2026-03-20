@@ -89,7 +89,7 @@ export class AvatarManager {
         } else {
             this.playLocalAnimation("idle");
         }
-        console.log("🔥 MOVEMENT CALLED", deltaX, deltaZ);
+        // console.log("🔥 MOVEMENT CALLED", deltaX, deltaZ);
     }
 
     // ======================
@@ -138,7 +138,7 @@ export class AvatarManager {
                 // collision
                 root.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
                 root.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
-                root.checkCollisions = true;
+                root.checkCollisions = false;
 
                 // ======================
                 // 🔥 REGISTER ANIMATIONS

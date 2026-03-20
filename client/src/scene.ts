@@ -170,7 +170,7 @@ async function loadEnvironment(scene: Scene) {
             camera.setTarget(center);
 
             // BATASI radius (jangan auto liar)
-            camera.radius = 12;
+            camera.radius = 5;
 
             console.log("🎥 Camera radius:", camera.radius);
         }

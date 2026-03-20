@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
-import { ROLES, AVATAR_CONFIG } from "@shared/constants";
-import { Vector3, Scalar, AnimationGroup, AbstractMesh } from "@babylonjs/core";
+import { ROLES } from "@shared/constants";
+import { Vector3, Scalar, AnimationGroup } from "@babylonjs/core";
 
 export interface UserData {
     uid: string;
@@ -19,31 +19,40 @@ export class AvatarManager {
     private avatars: Map<string, BABYLON.AbstractMesh> = new Map();
     private guiElements: Map<string, GUI.Rectangle> = new Map();
     private uiManager: GUI.AdvancedDynamicTexture;
+
     public localAvatar: BABYLON.AbstractMesh | null = null;
+    private currentAnim: string = "";
 
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
         this.uiManager = GUI.AdvancedDynamicTexture.CreateFullscreenUI("GlobalUI");
     }
 
+    // ======================
+    // 🔥 ANIMATION SYSTEM FIX
+    // ======================
     private stopAllAnimations() {
-        this.animations.forEach(anim => {
-            if (anim.isPlaying) anim.stop();
-        });
+        this.animations.forEach(anim => anim.stop());
     }
 
-    private playLocalAnimation(name: string, loop: boolean) {
-        const anim = this.animations.get(name);
-        if (anim && !anim.isPlaying) {
-            this.stopAllAnimations();
-            anim.play(loop);
-        }
+    private playLocalAnimation(name: string) {
+        const anim = this.animations.get(name.toLowerCase());
+        if (!anim) return;
+
+        if (this.currentAnim === name) return;
+
+        this.stopAllAnimations();
+        anim.start(true);
+        this.currentAnim = name;
     }
 
+    // ======================
+    // MOVEMENT
+    // ======================
     public handleAvatarMovement(deltaX: number, deltaZ: number, camera: any, socket: any) {
         if (!this.localAvatar || !camera) return;
 
-        const movementSpeed = 0.15;
+        const speed = 0.15;
         const rotationSpeed = 0.15;
 
         let forward = camera.getForwardRay().direction;
@@ -52,23 +61,23 @@ export class AvatarManager {
 
         let right = Vector3.Cross(Vector3.Up(), forward).normalize();
 
-        const moveDirection = forward.scale(deltaZ).add(right.scale(-deltaX));
+        const move = forward.scale(deltaZ).add(right.scale(-deltaX));
 
-        if (moveDirection.length() > 0.001) {
+        if (move.length() > 0.001) {
 
-            this.localAvatar.moveWithCollisions(moveDirection.scale(movementSpeed));
+            this.localAvatar.moveWithCollisions(move.scale(speed));
 
-            const targetRotation = Math.atan2(moveDirection.x, moveDirection.z);
+            const targetRot = Math.atan2(move.x, move.z);
             this.localAvatar.rotation.y = Scalar.LerpAngle(
                 this.localAvatar.rotation.y,
-                targetRotation,
+                targetRot,
                 rotationSpeed
             );
 
-            this.playLocalAnimation("walk", true);
+            this.playLocalAnimation("walk");
 
             if (socket) {
-                socket.emit('player_move', {
+                socket.emit("player_move", {
                     uid: this.localAvatar.name,
                     x: this.localAvatar.position.x,
                     y: this.localAvatar.position.y,
@@ -78,13 +87,13 @@ export class AvatarManager {
             }
 
         } else {
-            this.playLocalAnimation("idle", true);
+            this.playLocalAnimation("idle");
         }
     }
 
-    // =========================================
-    // 🔥 BAGIAN YANG DIUPDATE (AVATAR GLB)
-    // =========================================
+    // ======================
+    // 🔥 CREATE AVATAR (FINAL)
+    // ======================
     public createAvatar(user: UserData): BABYLON.AbstractMesh {
         if (this.avatars.has(user.uid)) {
             return this.avatars.get(user.uid)!;
@@ -94,100 +103,64 @@ export class AvatarManager {
             ? "final_yeti.glb"
             : "final_frog.glb";
 
-        // dummy sementara (biar tidak crash karena async)
         const dummy = BABYLON.MeshBuilder.CreateBox("temp", {}, this.scene);
 
-        BABYLON.SceneLoader.ImportMeshAsync(
-            "",
-            "/assets/avatar/",
-            fileName,
-            this.scene
-        ).then((result) => {
-            console.log("🎬 Animations:", result.animationGroups.map(a => a.name));
-            // ======================
-            // 🔥 PENTING: PAKAI ROOT
-            // ======================
-            const root = result.meshes[0];
-            const visual = result.meshes.find(m => m.getTotalVertices() > 0);
+        BABYLON.SceneLoader.ImportMeshAsync("", "/assets/avatar/", fileName, this.scene)
+            .then((result) => {
 
-            root.name = user.uid;
+                console.log("🎬 Animations:", result.animationGroups.map(a => a.name));
 
-            // ======================
-            // POSISI
-            // ======================
-            root.position.x = user.x || (Math.random() * 4 - 2);
-            root.position.z = user.z || (Math.random() * 4 - 2);
+                const root = result.meshes[0];
+                const visual = result.meshes.find(m => m.getTotalVertices() > 0);
 
-            // ======================
-            // AUTO SCALE (pakai visual mesh)
-            // ======================
-            if (visual) {
-                const bbox = visual.getBoundingInfo().boundingBox;
-                let height = bbox.extendSize.y * 2;
+                root.name = user.uid;
 
-                if (!height || height < 0.001) height = 1;
+                // posisi
+                root.position.x = user.x || (Math.random() * 4 - 2);
+                root.position.z = user.z || (Math.random() * 4 - 2);
 
-                const targetHeight = 1.7;
-                let scale = targetHeight / height;
+                // scale
+                if (visual) {
+                    const bbox = visual.getBoundingInfo().boundingBox;
+                    let height = bbox.extendSize.y * 2;
+                    if (!height || height < 0.001) height = 1;
 
-                scale = Math.min(Math.max(scale, 0.5), 3);
+                    const scale = Math.min(Math.max(1.7 / height, 0.5), 3);
+                    root.scaling.setAll(scale);
+                }
 
-                root.scaling.setAll(scale);
-            }
+                // ground fix
+                root.computeWorldMatrix(true);
+                const bounds = root.getHierarchyBoundingVectors(true);
+                root.position.y += -bounds.min.y + 0.05;
 
-            // ======================
-            // GROUND FIX
-            // ======================
-            root.computeWorldMatrix(true);
+                // collision
+                root.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
+                root.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
+                root.checkCollisions = true;
 
-            const bboxWorld = root.getHierarchyBoundingVectors(true);
-            const footY = bboxWorld.min.y;
+                // ======================
+                // 🔥 REGISTER ANIMATIONS
+                // ======================
+                this.animations.clear();
 
-            root.position.y += -footY + 0.05;
+                result.animationGroups.forEach(anim => {
+                    this.animations.set(anim.name.toLowerCase(), anim);
+                    anim.stop();
+                });
 
-            // ======================
-            // COLLISION (WAJIB DI ROOT)
-            // ======================
-            root.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
-            root.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
+                this.playLocalAnimation("idle");
 
-            root.checkCollisions = true;
-            root.applyGravity = true;
+                // nametag
+                this.addNameTag(root, user.uid, user.displayName);
 
-            // ======================
-            // ANIMATIONS
-            // ======================
-            result.animationGroups.forEach(anim => {
-                this.animations.set(anim.name.toLowerCase(), anim);
-                anim.stop();
-            });
-
-            this.playLocalAnimation("idle", true);
-
-            // ======================
-            // NAMETAG (ke root)
-            // ======================
-            this.addNameTag(root, user.uid, user.displayName);
-
-            // ======================
-            // SIMPAN ROOT (PENTING)
-            // ======================
-            this.avatars.set(user.uid, root);
-
-            // ======================
-            // LOCAL AVATAR FIX
-            // ======================
-            if (user.uid === this.localAvatar?.name || !this.localAvatar) {
+                this.avatars.set(user.uid, root);
                 this.localAvatar = root;
-            }
 
-            // ======================
-            // HAPUS DUMMY
-            // ======================
-            dummy.dispose();
+                dummy.dispose();
 
-            console.log("✅ Avatar GLB READY & MOVEABLE:", fileName);
-        });
+                console.log("✅ Avatar READY & ANIMATION WORKING");
+            });
 
         return dummy;
     }
@@ -215,17 +188,17 @@ export class AvatarManager {
 
     public updateAvatar(uid: string, position: any, rotation: any) {
         const avatar = this.avatars.get(uid);
-        if (avatar && position) {
-            const targetPos = new BABYLON.Vector3(position.x, position.y, position.z);
+        if (!avatar || !position) return;
 
-            if (!isNaN(targetPos.x)) {
-                avatar.position = BABYLON.Vector3.Lerp(avatar.position, targetPos, 0.2);
-            }
+        const target = new BABYLON.Vector3(position.x, position.y, position.z);
 
-            if (rotation) {
-                const targetRot = new BABYLON.Vector3(rotation.x, rotation.y, rotation.z);
-                avatar.rotation = BABYLON.Vector3.Lerp(avatar.rotation, targetRot, 0.2);
-            }
+        if (!isNaN(target.x)) {
+            avatar.position = BABYLON.Vector3.Lerp(avatar.position, target, 0.2);
+        }
+
+        if (rotation) {
+            const rot = new BABYLON.Vector3(rotation.x, rotation.y, rotation.z);
+            avatar.rotation = BABYLON.Vector3.Lerp(avatar.rotation, rot, 0.2);
         }
     }
 
@@ -242,6 +215,6 @@ export class AvatarManager {
             this.guiElements.delete(uid);
         }
 
-        console.log(`Avatar ${uid} musnah total, Lur!`);
+        console.log(`Avatar ${uid} musnah total`);
     }
 }

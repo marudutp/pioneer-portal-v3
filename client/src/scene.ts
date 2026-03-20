@@ -117,10 +117,20 @@ async function loadEnvironment(scene: Scene) {
 
         // 3. Atur Ketinggian Lantai
         const root = result.meshes[0];
-        if (root) {
-            root.position.y = -0.9; // Biar kaki nggak amblas!
-            console.log(`🏛️ Gedung ${fileName} berhasil mendarat di posisi Y: -0.9`);
-        }
+        // if (root) {
+        //     root.position.y = -0.9; // Biar kaki nggak amblas!
+        //     console.log(`🏛️ Gedung ${fileName} berhasil mendarat di posisi Y: -0.9`);
+        // }
+
+
+        const bounding = root.getHierarchyBoundingVectors(true);
+
+        // CENTER MODEL
+        const center = bounding.min.add(bounding.max).scale(0.5);
+        root.position.subtractInPlace(center);
+
+        // FIX GROUND
+        root.position.y -= bounding.min.y;
 
         // 4. Update Kamera agar tidak terlalu dekat
         // const camera = scene.activeCamera as ArcRotateCamera;

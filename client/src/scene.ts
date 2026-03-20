@@ -104,7 +104,7 @@ async function loadEnvironment(scene: Scene) {
         // Sesuaikan dengan nama file yang ada di folder /public/assets/
         const fileName = "classroom.glb"; 
 
-        const result = await SceneLoader.ImportMeshAsync("", "./assets/", fileName, scene);
+        const result = await SceneLoader.ImportMeshAsync("", "/assets/", fileName, scene);
 
         // 2. Operasi Plastik: Kecilkan semua mesh agar pas di mata!
         result.meshes.forEach(mesh => {

@@ -14,7 +14,9 @@ export interface UserData {
 }
 
 export class AvatarManager {
-    private animations: Map<string, AnimationGroup> = new Map();
+    // private animations: Map<string, AnimationGroup> = new Map();
+    private animations: Map<string, Map<string, AnimationGroup>> = new Map();
+
     private scene: BABYLON.Scene;
     private avatars: Map<string, BABYLON.AbstractMesh> = new Map();
     private guiElements: Map<string, GUI.Rectangle> = new Map();
@@ -22,7 +24,7 @@ export class AvatarManager {
 
     public localAvatar: BABYLON.AbstractMesh | null = null;
     private currentAnim: string = "";
-
+    public localUserId: string = "";
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
         this.uiManager = GUI.AdvancedDynamicTexture.CreateFullscreenUI("GlobalUI");
@@ -31,17 +33,41 @@ export class AvatarManager {
     // ======================
     // 🔥 ANIMATION SYSTEM FIX
     // ======================
+    // private stopAllAnimations() {
+    //     this.animations.forEach(anim => anim.stop());
+    // }
     private stopAllAnimations() {
-        this.animations.forEach(anim => anim.stop());
+        this.animations.forEach(animMap => {
+            animMap.forEach(anim => {
+                anim.stop();
+            });
+        });
     }
 
+    // private playLocalAnimation(name: string) {
+    //     const anim = this.animations.get(name.toLowerCase());
+    //     if (!anim) return;
+
+    //     if (this.currentAnim === name) return;
+
+    //     this.stopAllAnimations();
+    //     anim.start(true);
+    //     this.currentAnim = name;
+    // }
+
     private playLocalAnimation(name: string) {
-        const anim = this.animations.get(name.toLowerCase());
+        if (!this.localAvatar) return;
+
+        const animMap = this.animations.get(this.localAvatar.name);
+        if (!animMap) return;
+
+        const anim = animMap.get(name.toLowerCase());
         if (!anim) return;
 
         if (this.currentAnim === name) return;
 
-        this.stopAllAnimations();
+        animMap.forEach(a => a.stop());
+
         anim.start(true);
         this.currentAnim = name;
     }
@@ -272,18 +298,35 @@ export class AvatarManager {
                 // ======================
                 // 🔥 ANIMATIONS
                 // ======================
-                this.animations.clear();
+
+                // this.animations.clear();
+
+                // result.animationGroups.forEach(anim => {
+                //     anim.stop();
+                //     this.animations.set(anim.name.toLowerCase(), anim);
+                // });
+
+                const animMap = new Map<string, AnimationGroup>();
 
                 result.animationGroups.forEach(anim => {
                     anim.stop();
-                    this.animations.set(anim.name.toLowerCase(), anim);
+                    animMap.set(anim.name.toLowerCase(), anim);
                 });
 
+                this.animations.set(user.uid, animMap);
+
                 // paksa idle
-                const idle = this.animations.get("idle");
+                // const idle = this.animations.get("idle");
+                // if (idle) {
+                //     idle.start(true);
+                //     this.currentAnim = "idle";
+                // }
+
+                // const animMap = this.animations.get(user.uid);
+                const idle = animMap?.get("idle");
+
                 if (idle) {
                     idle.start(true);
-                    this.currentAnim = "idle";
                 }
 
                 // ======================

@@ -98,6 +98,49 @@ export class AvatarManager {
     // ======================
     // MOVEMENT
     // ======================
+    // public handleAvatarMovement(deltaX: number, deltaZ: number, camera: any, socket: any) {
+    //     if (!this.localAvatar || !camera) return;
+
+    //     const speed = 0.15;
+    //     const rotationSpeed = 0.15;
+
+    //     let forward = camera.getForwardRay().direction;
+    //     forward.y = 0;
+    //     forward = forward.normalize();
+
+    //     let right = Vector3.Cross(Vector3.Up(), forward).normalize();
+
+    //     const move = forward.scale(deltaZ).add(right.scale(-deltaX));
+
+    //     if (move.length() > 0.001) {
+
+    //         this.localAvatar.moveWithCollisions(move.scale(speed));
+
+    //         const targetRot = Math.atan2(move.x, move.z);
+    //         this.localAvatar.rotation.y = Scalar.LerpAngle(
+    //             this.localAvatar.rotation.y,
+    //             targetRot,
+    //             rotationSpeed
+    //         );
+
+    //         this.playLocalAnimation("walk");
+
+    //         if (socket) {
+    //             socket.emit("player_move", {
+    //                 uid: this.localAvatar.name,
+    //                 x: this.localAvatar.position.x,
+    //                 y: this.localAvatar.position.y,
+    //                 z: this.localAvatar.position.z,
+    //                 ry: this.localAvatar.rotation.y
+    //             });
+    //         }
+
+    //     } else {
+    //         this.playLocalAnimation("idle");
+    //     }
+    //     // console.log("🔥 MOVEMENT CALLED", deltaX, deltaZ);
+    // }
+
     public handleAvatarMovement(deltaX: number, deltaZ: number, camera: any, socket: any) {
         if (!this.localAvatar || !camera) return;
 
@@ -112,7 +155,11 @@ export class AvatarManager {
 
         const move = forward.scale(deltaZ).add(right.scale(-deltaX));
 
-        if (move.length() > 0.001) {
+        const isMoving = deltaX !== 0 || deltaZ !== 0;
+
+        if (isMoving) {
+
+            console.log("🎬 WALK TRIGGER");
 
             this.localAvatar.moveWithCollisions(move.scale(speed));
 
@@ -138,7 +185,6 @@ export class AvatarManager {
         } else {
             this.playLocalAnimation("idle");
         }
-        // console.log("🔥 MOVEMENT CALLED", deltaX, deltaZ);
     }
 
     // ======================

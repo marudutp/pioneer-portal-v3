@@ -79,7 +79,8 @@ export class AvatarManager {
         const animMap = this.animations.get(this.localUserId);
         if (!animMap) return;
 
-        const anim = animMap.get(name.toLowerCase());
+        // const anim = animMap.get(name.toLowerCase());
+        const anim = animMap.get(name);
         if (!anim) {
             console.warn("❌ Anim tidak ditemukan:", name);
             return;
@@ -171,7 +172,7 @@ export class AvatarManager {
                 rotationSpeed
             );
 
-            this.playLocalAnimation("walk");
+            this.playLocalAnimation("Walk");
 
             if (socket) {
                 socket.emit("player_move", {
@@ -358,7 +359,7 @@ export class AvatarManager {
                 // ======================
                 // 🔥 OFFSET (PENTING)
                 // ======================
-                root.position.y = -1; // bukan +1
+                root.position.y = 0; // bukan +1
 
                 // ======================
                 // COLLISION

@@ -329,7 +329,7 @@ function setupInput(
             camera,
             socket
         );
-        console.log("🔥 MOVEMENT INPUT:", deltaX, deltaZ);
+        // console.log("🔥 MOVEMENT INPUT:", deltaX, deltaZ);
         // avatarManager.handleAvatarMovement(0, 1, camera, socket);
     });
 }

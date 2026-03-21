@@ -111,52 +111,81 @@ export class AvatarManager {
 
                 console.log("🎬 Animations:", result.animationGroups.map(a => a.name));
 
+                // const root = result.meshes[0];
+                // const visual = result.meshes.find(m => m.getTotalVertices() > 0);
+
+                // root.name = user.uid;
+
+                // // posisi
+                // root.position.x = user.x || (Math.random() * 4 - 2);
+                // root.position.z = user.z || (Math.random() * 4 - 2);
+
+                // // scale
+                // if (visual) {
+                //     const bbox = visual.getBoundingInfo().boundingBox;
+                //     let height = bbox.extendSize.y * 2;
+                //     if (!height || height < 0.001) height = 1;
+
+                //     const scale = Math.min(Math.max(1.7 / height, 0.5), 3);
+                //     root.scaling.setAll(scale);
+                // }
+
+                // // ground fix
+                // root.computeWorldMatrix(true);
+                // const bounds = root.getHierarchyBoundingVectors(true);
+                // root.position.y += -bounds.min.y + 0.05;
+
+                // // collision
+                // root.ellipsoid = new BABYLON.Vector3(0.4, 0.9, 0.4);
+                // root.ellipsoidOffset = new BABYLON.Vector3(0, 0.9, 0);
+                // root.checkCollisions = false;
+
+                // // ======================
+                // // 🔥 REGISTER ANIMATIONS
+                // // ======================
+                // this.animations.clear();
+
+                // result.animationGroups.forEach(anim => {
+                //     this.animations.set(anim.name.toLowerCase(), anim);
+                //     anim.stop();
+                // });
+
+                // this.playLocalAnimation("idle");
+
+                // // nametag
+                // this.addNameTag(root, user.uid, user.displayName);
                 const root = result.meshes[0];
-                const visual = result.meshes.find(m => m.getTotalVertices() > 0);
 
-                root.name = user.uid;
+                // 🔥 BUAT CONTROLLER
+                const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, {
+                    height: 2,
+                    radius: 0.4
+                }, this.scene);
 
-                // posisi
-                root.position.x = user.x || (Math.random() * 4 - 2);
-                root.position.z = user.z || (Math.random() * 4 - 2);
+                controller.isVisible = false;
 
-                // scale
-                if (visual) {
-                    const bbox = visual.getBoundingInfo().boundingBox;
-                    let height = bbox.extendSize.y * 2;
-                    if (!height || height < 0.001) height = 1;
+                // posisi awal
+                controller.position.x = user.x || (Math.random() * 4 - 2);
+                controller.position.z = user.z || (Math.random() * 4 - 2);
 
-                    const scale = Math.min(Math.max(1.7 / height, 0.5), 3);
-                    root.scaling.setAll(scale);
-                }
-
-                // ground fix
-                root.computeWorldMatrix(true);
-                const bounds = root.getHierarchyBoundingVectors(true);
-                root.position.y += -bounds.min.y + 0.05;
-
-                // collision
-                root.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
-                root.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
-                root.checkCollisions = false;
+                // 🔥 PARENT GLB KE CONTROLLER
+                root.parent = controller;
 
                 // ======================
-                // 🔥 REGISTER ANIMATIONS
+                // COLLISION DI CONTROLLER
                 // ======================
-                this.animations.clear();
+                controller.checkCollisions = true;
 
-                result.animationGroups.forEach(anim => {
-                    this.animations.set(anim.name.toLowerCase(), anim);
-                    anim.stop();
-                });
+                // ======================
+                // SIMPAN CONTROLLER (BUKAN ROOT)
+                // ======================
+                this.avatars.set(user.uid, controller);
+                this.localAvatar = controller;
 
-                this.playLocalAnimation("idle");
-
-                // nametag
-                this.addNameTag(root, user.uid, user.displayName);
-
-                this.avatars.set(user.uid, root);
-                this.localAvatar = root;
+                // nametag tetap ke controller
+                this.addNameTag(controller, user.uid, user.displayName);
+                // this.avatars.set(user.uid, root);
+                // this.localAvatar = root;
 
                 dummy.dispose();
 

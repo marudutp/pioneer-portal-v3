@@ -192,13 +192,13 @@ export class AvatarManager {
 
                 // nametag tetap ke controller
                 this.addNameTag(controller, user.uid, user.displayName);
-                // this.avatars.set(user.uid, root);
-                // this.localAvatar = root;
+                this.avatars.set(user.uid, root);
+                this.localAvatar = root;
                 // ======================
                 // SIMPAN CONTROLLER (BUKAN ROOT)
                 // ======================
-                this.avatars.set(user.uid, controller);
-                this.localAvatar = controller;
+                // this.avatars.set(user.uid, controller);
+                // this.localAvatar = controller;
                 dummy.dispose();
 
                 console.log("✅ Avatar READY & ANIMATION WORKING");

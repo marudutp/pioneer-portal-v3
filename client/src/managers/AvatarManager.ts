@@ -75,7 +75,8 @@ export class AvatarManager {
     private playLocalAnimation(name: string) {
         if (!this.localAvatar) return;
 
-        const animMap = this.animations.get(this.localAvatar.name);
+        // const animMap = this.animations.get(this.localAvatar.name);
+        const animMap = this.animations.get(this.localUserId);
         if (!animMap) return;
 
         const anim = animMap.get(name.toLowerCase());

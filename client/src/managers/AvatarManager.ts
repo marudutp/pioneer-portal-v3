@@ -95,6 +95,121 @@ export class AvatarManager {
     // ======================
     // 🔥 CREATE AVATAR (FINAL)
     // ======================
+
+
+    // public createAvatar(user: UserData): BABYLON.AbstractMesh {
+    //     if (this.avatars.has(user.uid)) {
+    //         return this.avatars.get(user.uid)!;
+    //     }
+
+    //     const fileName = user.role === ROLES.TEACHER
+    //         ? "final_yeti.glb"
+    //         : "final_frog.glb";
+
+    //     const dummy = BABYLON.MeshBuilder.CreateBox("temp", {}, this.scene);
+
+    //     BABYLON.SceneLoader.ImportMeshAsync("", "/assets/avatar/", fileName, this.scene)
+    //         .then((result) => {
+
+    //             console.log("🎬 Animations:", result.animationGroups.map(a => a.name));
+
+    //             // const root = result.meshes[0];
+    //             // const visual = result.meshes.find(m => m.getTotalVertices() > 0);
+
+    //             // root.name = user.uid;
+
+    //             // // posisi
+    //             // root.position.x = user.x || (Math.random() * 4 - 2);
+    //             // root.position.z = user.z || (Math.random() * 4 - 2);
+
+    //             // // scale
+    //             // if (visual) {
+    //             //     const bbox = visual.getBoundingInfo().boundingBox;
+    //             //     let height = bbox.extendSize.y * 2;
+    //             //     if (!height || height < 0.001) height = 1;
+
+    //             //     const scale = Math.min(Math.max(1.7 / height, 0.5), 3);
+    //             //     root.scaling.setAll(scale);
+    //             // }
+
+    //             // // ground fix
+    //             // root.computeWorldMatrix(true);
+    //             // const bounds = root.getHierarchyBoundingVectors(true);
+    //             // root.position.y += -bounds.min.y + 0.05;
+
+    //             // // collision
+    //             // root.ellipsoid = new BABYLON.Vector3(0.4, 0.9, 0.4);
+    //             // root.ellipsoidOffset = new BABYLON.Vector3(0, 0.9, 0);
+    //             // root.checkCollisions = false;
+
+    //             // // ======================
+    //             // // 🔥 REGISTER ANIMATIONS
+    //             // // ======================
+    //             // this.animations.clear();
+
+    //             // result.animationGroups.forEach(anim => {
+    //             //     this.animations.set(anim.name.toLowerCase(), anim);
+    //             //     anim.stop();
+    //             // });
+
+    //             // this.playLocalAnimation("idle");
+
+    //             // // nametag
+    //             // this.addNameTag(root, user.uid, user.displayName);
+    //             const root = result.meshes[0];
+    //             // ======================
+    //             // 🔥 FIX OFFSET AVATAR
+    //             // ======================
+    //             root.position.y = 1;
+    //             // 🔥 BUAT CONTROLLER
+    //             const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, {
+    //                 height: 2,
+    //                 radius: 0.4
+    //             }, this.scene);
+
+    //             controller.isVisible = false;
+
+    //             // posisi awal
+    //             controller.position.x = user.x || (Math.random() * 4 - 2);
+    //             controller.position.z = user.z || (Math.random() * 4 - 2);
+
+    //             // 🔥 PARENT GLB KE CONTROLLER
+    //             root.parent = controller;
+
+    //             // ======================
+    //             // COLLISION DI CONTROLLER
+    //             // ======================
+    //             controller.checkCollisions = true;
+    //             // // ======================
+    //             // // 🔥 REGISTER ANIMATIONS
+    //             // // ======================
+    //             this.animations.clear();
+
+    //             result.animationGroups.forEach(anim => {
+    //                 this.animations.set(anim.name.toLowerCase(), anim);
+    //                 anim.stop();
+    //             });
+
+
+
+    //             // nametag tetap ke controller
+    //             this.addNameTag(controller, user.uid, user.displayName);
+    //             // this.avatars.set(user.uid, root);
+    //             // this.localAvatar = root;
+    //             // ======================
+    //             // SIMPAN CONTROLLER (BUKAN ROOT)
+    //             // ======================
+    //             this.avatars.set(user.uid, controller);
+    //             this.localAvatar = controller;
+    //             dummy.dispose();
+
+    //             console.log("✅ Avatar READY & ANIMATION WORKING");
+    //         });
+
+    //     return dummy;
+    // }
+
+
     public createAvatar(user: UserData): BABYLON.AbstractMesh {
         if (this.avatars.has(user.uid)) {
             return this.avatars.get(user.uid)!;
@@ -111,55 +226,12 @@ export class AvatarManager {
 
                 console.log("🎬 Animations:", result.animationGroups.map(a => a.name));
 
-                // const root = result.meshes[0];
-                // const visual = result.meshes.find(m => m.getTotalVertices() > 0);
-
-                // root.name = user.uid;
-
-                // // posisi
-                // root.position.x = user.x || (Math.random() * 4 - 2);
-                // root.position.z = user.z || (Math.random() * 4 - 2);
-
-                // // scale
-                // if (visual) {
-                //     const bbox = visual.getBoundingInfo().boundingBox;
-                //     let height = bbox.extendSize.y * 2;
-                //     if (!height || height < 0.001) height = 1;
-
-                //     const scale = Math.min(Math.max(1.7 / height, 0.5), 3);
-                //     root.scaling.setAll(scale);
-                // }
-
-                // // ground fix
-                // root.computeWorldMatrix(true);
-                // const bounds = root.getHierarchyBoundingVectors(true);
-                // root.position.y += -bounds.min.y + 0.05;
-
-                // // collision
-                // root.ellipsoid = new BABYLON.Vector3(0.4, 0.9, 0.4);
-                // root.ellipsoidOffset = new BABYLON.Vector3(0, 0.9, 0);
-                // root.checkCollisions = false;
-
-                // // ======================
-                // // 🔥 REGISTER ANIMATIONS
-                // // ======================
-                // this.animations.clear();
-
-                // result.animationGroups.forEach(anim => {
-                //     this.animations.set(anim.name.toLowerCase(), anim);
-                //     anim.stop();
-                // });
-
-                // this.playLocalAnimation("idle");
-
-                // // nametag
-                // this.addNameTag(root, user.uid, user.displayName);
                 const root = result.meshes[0];
+                const visual = result.meshes.find(m => m.getTotalVertices() > 0);
+
                 // ======================
-                // 🔥 FIX OFFSET AVATAR
+                // 🔥 CONTROLLER
                 // ======================
-                root.position.y = 1;
-                // 🔥 BUAT CONTROLLER
                 const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, {
                     height: 2,
                     radius: 0.4
@@ -167,46 +239,75 @@ export class AvatarManager {
 
                 controller.isVisible = false;
 
-                // posisi awal
                 controller.position.x = user.x || (Math.random() * 4 - 2);
                 controller.position.z = user.z || (Math.random() * 4 - 2);
 
-                // 🔥 PARENT GLB KE CONTROLLER
+                // ======================
+                // 🔥 PARENT
+                // ======================
                 root.parent = controller;
 
                 // ======================
-                // COLLISION DI CONTROLLER
+                // 🔥 SCALE
+                // ======================
+                if (visual) {
+                    const bbox = visual.getBoundingInfo().boundingBox;
+                    let height = bbox.extendSize.y * 2;
+                    if (!height || height < 0.001) height = 1;
+
+                    const scale = Math.min(Math.max(1.7 / height, 0.5), 3);
+                    root.scaling.setAll(scale);
+                }
+
+                // ======================
+                // 🔥 OFFSET (PENTING)
+                // ======================
+                root.position.y = -1; // bukan +1
+
+                // ======================
+                // COLLISION
                 // ======================
                 controller.checkCollisions = true;
-                // // ======================
-                // // 🔥 REGISTER ANIMATIONS
-                // // ======================
+
+                // ======================
+                // 🔥 ANIMATIONS
+                // ======================
                 this.animations.clear();
 
                 result.animationGroups.forEach(anim => {
-                    this.animations.set(anim.name.toLowerCase(), anim);
                     anim.stop();
+                    this.animations.set(anim.name.toLowerCase(), anim);
                 });
 
+                // paksa idle
+                const idle = this.animations.get("idle");
+                if (idle) {
+                    idle.start(true);
+                    this.currentAnim = "idle";
+                }
 
-
-                // nametag tetap ke controller
+                // ======================
+                // NAMETAG
+                // ======================
                 this.addNameTag(controller, user.uid, user.displayName);
-                this.avatars.set(user.uid, root);
-                this.localAvatar = root;
+
                 // ======================
-                // SIMPAN CONTROLLER (BUKAN ROOT)
+                // SIMPAN
                 // ======================
-                // this.avatars.set(user.uid, controller);
-                // this.localAvatar = controller;
+                this.avatars.set(user.uid, controller);
+
+                // 🔥 FIX OWNERSHIP
+                if (user.uid === this.localUserId) {
+                    this.localAvatar = controller;
+                }
+
                 dummy.dispose();
 
-                console.log("✅ Avatar READY & ANIMATION WORKING");
+                console.log("✅ Avatar FINAL SIAP");
             });
 
         return dummy;
     }
-
     private addNameTag(parent: BABYLON.AbstractMesh, uid: string, name: string) {
         const rect = new GUI.Rectangle();
         rect.width = "150px";

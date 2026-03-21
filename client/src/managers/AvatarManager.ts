@@ -175,6 +175,15 @@ export class AvatarManager {
                 // COLLISION DI CONTROLLER
                 // ======================
                 controller.checkCollisions = true;
+                // // ======================
+                // // 🔥 REGISTER ANIMATIONS
+                // // ======================
+                this.animations.clear();
+
+                result.animationGroups.forEach(anim => {
+                    this.animations.set(anim.name.toLowerCase(), anim);
+                    anim.stop();
+                });
 
                 // ======================
                 // SIMPAN CONTROLLER (BUKAN ROOT)

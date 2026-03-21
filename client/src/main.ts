@@ -128,6 +128,19 @@ async function bootstrap() {
         networkManager.socket
     );
 
+    //21032026
+    if (user) {
+        // 1. Kasih tahu Manager siapa "SAYA"
+        avatarManager.setLocalUserId(user.uid);
+
+        // 2. Buat avatar diri sendiri
+        avatarManager.createAvatar({
+            uid: user.uid,
+            displayName: user.displayName || "User",
+            role: TEACHER_EMAILS.includes(user.email!) ? ROLES.TEACHER : ROLES.STUDENT
+        });
+    }
+
     // --- 7.5 LOGIKA MOBILE (JOYSTICK) ---
     // Deteksi lebih akurat untuk HP & Tablet (termasuk iPad Pro)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0);

@@ -155,7 +155,10 @@ export class AvatarManager {
                 // // nametag
                 // this.addNameTag(root, user.uid, user.displayName);
                 const root = result.meshes[0];
-
+                // ======================
+                // 🔥 FIX OFFSET AVATAR
+                // ======================
+                root.position.y = -1;
                 // 🔥 BUAT CONTROLLER
                 const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, {
                     height: 2,

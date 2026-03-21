@@ -158,7 +158,7 @@ export class AvatarManager {
                 // ======================
                 // 🔥 FIX OFFSET AVATAR
                 // ======================
-                root.position.y = -1;
+                root.position.y = 0.15;
                 // 🔥 BUAT CONTROLLER
                 const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, {
                     height: 2,

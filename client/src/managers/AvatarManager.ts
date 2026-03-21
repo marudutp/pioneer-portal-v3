@@ -55,6 +55,23 @@ export class AvatarManager {
     //     this.currentAnim = name;
     // }
 
+    // private playLocalAnimation(name: string) {
+    //     if (!this.localAvatar) return;
+
+    //     const animMap = this.animations.get(this.localAvatar.name);
+    //     if (!animMap) return;
+
+    //     const anim = animMap.get(name.toLowerCase());
+    //     if (!anim) return;
+
+    //     if (this.currentAnim === name) return;
+
+    //     animMap.forEach(a => a.stop());
+
+    //     anim.start(true);
+    //     this.currentAnim = name;
+    // }
+
     private playLocalAnimation(name: string) {
         if (!this.localAvatar) return;
 
@@ -62,14 +79,20 @@ export class AvatarManager {
         if (!animMap) return;
 
         const anim = animMap.get(name.toLowerCase());
-        if (!anim) return;
+        if (!anim) {
+            console.warn("❌ Anim tidak ditemukan:", name);
+            return;
+        }
 
         if (this.currentAnim === name) return;
 
+        // 🔥 stop hanya anim avatar ini
         animMap.forEach(a => a.stop());
 
         anim.start(true);
         this.currentAnim = name;
+
+        console.log("🎬 PLAY:", name);
     }
 
     // ======================

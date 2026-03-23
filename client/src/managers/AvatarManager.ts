@@ -201,33 +201,35 @@ export class AvatarManager {
     // }
 
     public updateAvatar(uid: string, data: any) {
-        // 1. Jangan gerakkan diri sendiri lewat data server
+        // Jangan gerakkan diri sendiri lewat sinyal server
         if (uid === this.localUserId) return;
 
         const avatar = this.avatars.get(uid);
         if (!avatar || !data) return;
 
-        // 2. Tentukan target posisi (Gunakan data.x dan data.z dari paket tadi)
-        const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
+        // 1. Tentukan target posisi (Y dikunci di GROUND_Y agar tidak tenggelam)
+        const targetPos = new BABYLON.Vector3(data.x, this.GROUND_Y, data.z);
 
-        // 3. Hitung jarak untuk trigger animasi
-        const distance = Vector3.Distance(avatar.position, targetPos);
+        // 2. Hitung jarak untuk deteksi animasi
+        const distance = BABYLON.Vector3.Distance(avatar.position, targetPos);
 
-        // 4. Update Posisi & Rotasi (Smooth Lerp)
-        avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.4);
+        // 3. Update Posisi & Rotasi secara halus (Lerp)
+        avatar.position = BABYLON.Vector3.Lerp(avatar.position, targetPos, 0.4);
 
         if (data.ry !== undefined) {
-            avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
+            avatar.rotation.y = BABYLON.Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
         }
 
-        // 5. 🔥 REMOTE ANIMATION FIX: 
-        // Jika jarak pindah > 0.02, maka dia "walk", jika tidak dia "idle"
+        // 4. 🔥 LOGIKA ANTI-BEDUK: Jika kawan pindah > 0.02, putar animasi jalan
         const animMap = this.animations.get(uid);
         if (animMap) {
-            const animName = distance > 0.02 ? "walk" : "idle";
-            const targetAnim = Array.from(animMap.keys()).find(k => k.includes(animName));
-            if (targetAnim) {
-                const anim = animMap.get(targetAnim);
+            const isMoving = distance > 0.02;
+            const animName = isMoving ? "walk" : "idle";
+
+            // Cari nama animasi yang mirip (lowercase)
+            const targetKey = Array.from(animMap.keys()).find(k => k.includes(animName));
+            if (targetKey) {
+                const anim = animMap.get(targetKey);
                 if (anim && !anim.isPlaying) {
                     animMap.forEach(a => a.stop());
                     anim.start(true);

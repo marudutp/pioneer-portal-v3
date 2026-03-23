@@ -193,19 +193,19 @@ export class NetworkManager {
         // });
 
         this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
-            // 🔥 Pastikan UID ada dan BUKAN diri kita sendiri
+            // 1. Cek apakah datanya punya UID dan bukan diri kita sendiri
             if (data.uid && data.uid !== this.localUid) {
 
-                // Kita bungkus jadi 1 objek agar sesuai dengan AvatarManager.ts
-                const updateData = {
+                // 🔥 SOLUSI: Bungkus position dan rotation jadi SATU objek (Argumen ke-2)
+                const payload = {
                     x: data.position.x,
                     y: data.position.y,
                     z: data.position.z,
                     ry: data.rotation ? (data.rotation.y || data.rotation.ry) : 0
                 };
 
-                // Panggil hanya dengan 2 argumen: (UID, DATA_OBJEK)
-                this.avatarManager.updateAvatar(data.uid, updateData);
+                // Sekarang kita panggil cuma 2 argumen: (UID, PAYLOAD)
+                this.avatarManager.updateAvatar(data.uid, payload);
             }
         });
 

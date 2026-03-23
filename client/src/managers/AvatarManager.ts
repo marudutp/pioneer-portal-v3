@@ -164,27 +164,64 @@ export class AvatarManager {
     //         avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
     //     }
     // }
+
+    // public updateAvatar(uid: string, data: any) {
+    //     // 🔥 PROTEKSI: Jangan update diri sendiri
+    //     if (uid === this.localUserId) return;
+
+    //     const avatar = this.avatars.get(uid);
+    //     if (!avatar || !data) return;
+
+    //     const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
+
+    //     // Hitung jarak pindah untuk trigger animasi "walk" orang lain
+    //     const distance = Vector3.Distance(avatar.position, targetPos);
+
+    //     // 1. Geser Posisi (Lerp)
+    //     avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.4);
+
+    //     // 2. Geser Rotasi
+    //     if (data.ry !== undefined) {
+    //         avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
+    //     }
+
+    //     // 3. 🔥 REMOTE ANIMATION: Jika orang lain pindah > 0.02 unit, suruh dia "walk"
+    //     const animMap = this.animations.get(uid);
+    //     if (animMap) {
+    //         const animName = distance > 0.02 ? "walk" : "idle";
+    //         const targetAnim = Array.from(animMap.keys()).find(k => k.includes(animName));
+    //         if (targetAnim) {
+    //             const anim = animMap.get(targetAnim);
+    //             if (anim && !anim.isPlaying) {
+    //                 animMap.forEach(a => a.stop());
+    //                 anim.start(true);
+    //             }
+    //         }
+    //     }
+    // }
+
     public updateAvatar(uid: string, data: any) {
-        // 🔥 PROTEKSI: Jangan update diri sendiri
+        // 1. Jangan gerakkan diri sendiri lewat data server
         if (uid === this.localUserId) return;
 
         const avatar = this.avatars.get(uid);
         if (!avatar || !data) return;
 
+        // 2. Tentukan target posisi (Gunakan data.x dan data.z dari paket tadi)
         const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
 
-        // Hitung jarak pindah untuk trigger animasi "walk" orang lain
+        // 3. Hitung jarak untuk trigger animasi
         const distance = Vector3.Distance(avatar.position, targetPos);
 
-        // 1. Geser Posisi (Lerp)
+        // 4. Update Posisi & Rotasi (Smooth Lerp)
         avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.4);
 
-        // 2. Geser Rotasi
         if (data.ry !== undefined) {
             avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
         }
 
-        // 3. 🔥 REMOTE ANIMATION: Jika orang lain pindah > 0.02 unit, suruh dia "walk"
+        // 5. 🔥 REMOTE ANIMATION FIX: 
+        // Jika jarak pindah > 0.02, maka dia "walk", jika tidak dia "idle"
         const animMap = this.animations.get(uid);
         if (animMap) {
             const animName = distance > 0.02 ? "walk" : "idle";

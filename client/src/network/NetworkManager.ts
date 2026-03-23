@@ -179,18 +179,35 @@ export class NetworkManager {
         //         this.avatarManager.updateAvatar(data.uid, data.position, data.rotation);
         //     }
         // });
+
+        // this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
+        //     if (data.uid && data.uid !== this.localUid) {
+        //         // 🔥 Gabungkan position dan rotation ke dalam satu objek (argumen kedua)
+        //         this.avatarManager.updateAvatar(data.uid, {
+        //             x: data.position.x,
+        //             y: data.position.y,
+        //             z: data.position.z,
+        //             ry: data.rotation ? (data.rotation.y || data.rotation.ry) : 0
+        //         });
+        //     }
+        // });
+
         this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
+            // 🔥 Pastikan UID ada dan BUKAN diri kita sendiri
             if (data.uid && data.uid !== this.localUid) {
-                // 🔥 Gabungkan position dan rotation ke dalam satu objek (argumen kedua)
-                this.avatarManager.updateAvatar(data.uid, {
+
+                // Kita bungkus jadi 1 objek agar sesuai dengan AvatarManager.ts
+                const updateData = {
                     x: data.position.x,
                     y: data.position.y,
                     z: data.position.z,
                     ry: data.rotation ? (data.rotation.y || data.rotation.ry) : 0
-                });
+                };
+
+                // Panggil hanya dengan 2 argumen: (UID, DATA_OBJEK)
+                this.avatarManager.updateAvatar(data.uid, updateData);
             }
         });
-
 
         this.socket.on("update-whiteboard-slide", (data: { slideUrl: string }) => {
             // Pastikan manager tidak null

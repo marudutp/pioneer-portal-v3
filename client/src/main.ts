@@ -6,15 +6,14 @@ import { NetworkManager } from "./network/NetworkManager";
 import * as BABYLON from "@babylonjs/core";
 import { WhiteboardManager } from "./managers/WhiteboardManager";
 import { WhiteboardUI } from "./managers/WhiteboardUI";
-import { User } from "firebase/auth"; // Atau library auth yang kamu pakai
+import { User } from "firebase/auth";
 import { TEACHER_EMAILS } from "@shared/admin.config";
 import { ROLES } from "@shared/constants";
-import { VirtualJoystick } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 
-// =========================
-// 🔥 GLOBAL OPTIMIZATION SETUP (WAJIB DI ATAS)
-// =========================
+// ==========================================
+// 🔥 GLOBAL OPTIMIZATION & DECODER SETUP
+// ==========================================
 BABYLON.DracoCompression.Configuration = {
     decoder: {
         wasmUrl: "https://cdn.babylonjs.com/draco_wasm_wrapper_gltf.js",
@@ -23,7 +22,6 @@ BABYLON.DracoCompression.Configuration = {
     }
 };
 
-// 🔥 KTX2 FIX (INI YANG SERING MISS)
 (BABYLON.KhronosTextureContainer2 as any).URLConfig = {
     jsDecoderModule: "https://cdn.babylonjs.com/babylon.ktx2Decoder.js",
     wasmUASTCToASTC: "https://cdn.babylonjs.com/wasm/uastc_astc.wasm",
@@ -33,287 +31,105 @@ BABYLON.DracoCompression.Configuration = {
     wasmMSCTranscoder: "https://cdn.babylonjs.com/wasm/msc_basis_transcoder.wasm",
     jsMSCTranscoder: "https://cdn.babylonjs.com/babylon.msc_basis_transcoder.js"
 };
-// Buat "KTP" baru untuk User kita
+
 interface AppUser extends User {
     role: string;
 }
-// const SERVER_URL = `${window.location.protocol}//${window.location.hostname}:3000`;
+
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || `${window.location.protocol}//${window.location.hostname}:3000`;
-
-console.log("🚀 Menghubungkan ke Server di:", SERVER_URL);
-
 let isStarted = false;
 
-
-
 async function bootstrap() {
+    if (isStarted) return;
+
+    // 1. UI Overlay Handling
     const overlay = document.getElementById("ui-overlay");
     if (overlay) overlay.style.opacity = "0";
     setTimeout(() => { if (overlay) overlay.style.display = "none"; }, 500);
 
-    if (isStarted) return;
+    console.log("🚀 Memulai Pioneer Portal V3...");
 
-    console.log("🚀 Memulai Pioneer Portal V3... Siapkan mental, Ferguso!");
-
-    // 1. Fase Autentikasi
+    // 2. Fase Autentikasi
     const googleUser = await loginWithGoogle();
     if (!googleUser) return;
 
     const user = googleUser as AppUser;
+    user.role = TEACHER_EMAILS.includes(user.email || "") ? ROLES.TEACHER : ROLES.STUDENT;
 
-    // LOGIKA PENENTUAN ROLE (Sudah Benar)
-    user.role = TEACHER_EMAILS.includes(user.email || "")
-        ? ROLES.TEACHER
-        : ROLES.STUDENT;
+    console.log(`Selamat Datang, ${user.displayName}! [Role: ${user.role}]`);
 
-    console.log(`Selamat Datang, ${user.displayName}! Anda masuk sebagai: ${user.role}`);
-
-
-
-    // 2. Inisialisasi Panggung
+    // 3. Inisialisasi Engine & Scene
     const { scene, engine, canvas } = await createPioneerScene("renderCanvas");
 
-    // 3. Inisialisasi Para Manajer
+    // 4. Inisialisasi Manager
     const avatarManager = new AvatarManager(scene);
     const voiceManager = new VoiceManager(scene);
     const networkManager = new NetworkManager(SERVER_URL, avatarManager);
     const wbManager = new WhiteboardManager(scene, networkManager, user.role);
 
-    // Hubungkan Manager ke Network
+    // Integrasi antar Manager
     (networkManager as any).voiceManager = voiceManager;
     networkManager.setWhiteboardManager(wbManager);
 
-    // 🔥 PENTING: Set Local User ID DULU sebelum join/create avatar
-    avatarManager.localUserId = user.uid;
-    console.log("🆔 Local ID Set:", user.uid);
+    // 🔥 PENTING: Set ID Lokal DULU (Kunci agar tidak ganda & kontrol sinkron)
+    avatarManager.setLocalUserId(user.uid);
 
-    // 4. Aktifkan Mikrofon
+    // 5. Aktifkan Fitur Network
     await networkManager.startVoiceChat();
+    networkManager.joinClass(user.uid, user.displayName || "User", user.role);
 
-    // 5. Join ke Jaringan (Server akan mengirim list player lain)
-    networkManager.joinClass(user.uid, user.displayName || "Anonim", user.role);
-
-    // 6. Buat Avatar Lokal
-    // Karena localUserId sudah di-set di atas, fungsi ini akan otomatis 
-    // mengisi avatarManager.localAvatar setelah GLB selesai load.
+    // 6. Buat Avatar Lokal (Hanya dipanggil sekali di sini)
     avatarManager.createAvatar({
         uid: user.uid,
         displayName: user.displayName || "Saya",
         role: user.role
     });
 
-    // ❌ HAPUS LOGIKA setInterval YANG LAMA (checkAvatarReady)
-
-    // 7. Logika Pergerakan (PC/Keyboard)
-    setupInput(
-        scene,
-        avatarManager,
-        scene.activeCamera as BABYLON.Camera,
-        networkManager.socket
-    );
-
-    //21032026
-    // Di dalam main.ts (fungsi bootstrap atau init)
-    // const avatarManager = new AvatarManager(scene);
-
-    // Pastikan user sudah login dan punya uid
-    if (user) {
-        // 🔥 Panggil fungsi ini dulu agar localUserId terisi
-        avatarManager.setLocalUserId(user.uid);
-
-        // Baru kemudian buat avatar
-        avatarManager.createAvatar({
-            uid: user.uid,
-            displayName: user.displayName || "User",
-            role: user.role
-        });
-    }
-
-    // --- 7.5 LOGIKA MOBILE (JOYSTICK) ---
-    // Deteksi lebih akurat untuk HP & Tablet (termasuk iPad Pro)
+    // 7. Input Handling (PC & Mobile)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0);
 
-    // DI MAIN.TS (Bagian bootstrap)
-
-    // if (isMobile) {
-    //     document.getElementById('mobile-controls')!.style.display = 'flex';
-
-    //     const leftJoystick = new BABYLON.VirtualJoystick(true);
-    //     const rightJoystick = new BABYLON.VirtualJoystick(false);
-
-    //     scene.onBeforeRenderObservable.add(() => {
-    //         if (leftJoystick.pressed) {
-    //             // PANGGIL LEWAT avatarManager DAN KIRIM KAMERA + SOCKET
-    //             avatarManager.handleAvatarMovement(
-    //                 leftJoystick.deltaPosition.x,
-    //                 leftJoystick.deltaPosition.y,
-    //                 scene.activeCamera,     // <--- SETORAN 1
-    //                 networkManager.socket   // <--- SETORAN 2
-    //             );
-    //         }
-
-    //         if (rightJoystick.pressed && avatarManager.localAvatar) {
-    //             // Untuk memutar pandangan kamera/avatar
-    //             avatarManager.localAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
-    //         }
-    //     });
-
-    // }
-
-    //chatgpt edit 15032026
     if (isMobile) {
-
-        const mobileUI = document.getElementById("mobile-controls");
-        if (mobileUI) mobileUI.style.display = "flex";
-        BABYLON.VirtualJoystick.Canvas = canvas;
-        const leftJoystick = new BABYLON.VirtualJoystick(true);
-        const rightJoystick = new BABYLON.VirtualJoystick(false);
-
-        leftJoystick.setJoystickSensibility(0.15);
-        rightJoystick.setJoystickSensibility(0.15);
-
-        scene.onBeforeRenderObservable.add(() => {
-
-            if (leftJoystick.pressed && avatarManager.localAvatar) {
-                console.log("JOYSTICK ACTIVE", leftJoystick.deltaPosition);
-                const moveX = leftJoystick.deltaPosition.x * 5;
-                const moveY = -leftJoystick.deltaPosition.y * 5;
-
-                avatarManager.handleAvatarMovement(
-                    moveX,
-                    moveY,
-                    scene.activeCamera,
-                    networkManager.socket
-                );
-            }
-
-            if (rightJoystick.pressed && avatarManager.localAvatar) {
-
-                avatarManager.localAvatar.rotation.y +=
-                    rightJoystick.deltaPosition.x * 0.05;
-            }
-
-        });
+        setupMobileInput(scene, avatarManager, canvas, networkManager.socket);
+    } else {
+        setupKeyboardInput(scene, avatarManager, scene.activeCamera as BABYLON.Camera, networkManager.socket);
     }
 
-    // if (isMobile) {
-    //     const mobileUI = document.getElementById('mobile-controls');
-    //     if (mobileUI) mobileUI.style.display = 'flex';
-
-    //     // Buat Joystick Kiri (Movement)
-    //     const leftJoystick = new VirtualJoystick(true);
-    //     leftJoystick.setJoystickSensibility(0.05);
-
-    //     // Buat Joystick Kanan (Rotation)
-    //     const rightJoystick = new VirtualJoystick(false);
-    //     rightJoystick.reverseUpDown = true;
-
-    //     // Masukkan ke dalam Render Loop
-    //     scene.onBeforeRenderObservable.add(() => {
-    //         if (leftJoystick.pressed) {
-    //             // Pastikan panggil fungsi yang sudah kita perbaiki tadi
-    //             // avatarManager.handleAvatarMovement(leftJoystick.deltaPosition.x, leftJoystick.deltaPosition.y);
-    //             avatarManager.handleAvatarMovement(
-    //                 leftJoystick.deltaPosition.x,
-    //                 leftJoystick.deltaPosition.y,
-    //                 scene.activeCamera,    // <--- Butuh setoran Kamera
-    //                 (networkManager as any).socket  // <--- Butuh setoran Socket buat lapor ke server
-    //             );
-    //         }
-
-    //         if (rightJoystick.pressed) {
-    //             // PAKAI 'myAvatar' (sesuai variabel di langkah 6)
-    //             myAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
-    //         }
-    //     });
-    // }
-    // 8. Munculkan UI Whiteboard
+    // 8. Whiteboard & Finalisasi
     new WhiteboardUI(wbManager, user.role);
-
-    // 9. Tanda Scene Siap
     networkManager.setReady();
 
-    // 10. Jalankan Render Loop
+    // 9. Render Loop
     isStarted = true;
     engine.runRenderLoop(() => {
         scene.render();
     });
 
-    console.log("Pioneer Portal V3 Berhasil Mengudara! Bummm!");
-
     // Audio Unlocker
     window.addEventListener("click", () => {
         if (BABYLON.Engine.audioEngine) {
             BABYLON.Engine.audioEngine.unlock();
-            console.log("🔊 Audio Unlocked!");
         }
     }, { once: true });
 
-    window.addEventListener("resize", () => {
-        engine.resize();
-    });
-    // if (!isMobile) {
-    //     window.addEventListener("pointerdown", () => {
-    //         engine.enterPointerlock();
-    //     }, { once: true });
-    // }
+    window.addEventListener("resize", () => { engine.resize(); });
 }
+
 /**
- * Kontrol Gerakan Sederhana (WASD)
+ * ⌨️ KONTROL KEYBOARD (WASD)
  */
-
-// function setupInput(scene: BABYLON.Scene, mesh: BABYLON.AbstractMesh, onMove: (p: any, r: any) => void) {
-//     const inputMap: any = {};
-//     scene.actionManager = new BABYLON.ActionManager(scene);
-//     scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
-//         inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
-//     }));
-//     scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, (evt) => {
-//         inputMap[evt.sourceEvent.key.toLowerCase()] = evt.sourceEvent.type === "keydown";
-//     }));
-
-//     scene.onBeforeRenderObservable.add(() => {
-//         let moved = false;
-//         const speed = 0.1;
-
-//         if (inputMap["w"]) { mesh.position.z += speed; moved = true; }
-//         if (inputMap["s"]) { mesh.position.z -= speed; moved = true; }
-//         if (inputMap["a"]) { mesh.position.x -= speed; moved = true; }
-//         if (inputMap["d"]) { mesh.position.x += speed; moved = true; }
-
-//         if (moved) {
-//             onMove(mesh.position, mesh.rotation);
-//         }
-//     });
-// }
-
-function setupInput(
-    scene: BABYLON.Scene,
-    avatarManager: any,
-    camera: BABYLON.Camera,
-    socket: any
-) {
-    console.log("✅ setupInput aktif");
+function setupKeyboardInput(scene: BABYLON.Scene, avatarManager: AvatarManager, camera: BABYLON.Camera, socket: any) {
     const inputMap: any = {};
-
     scene.actionManager = new BABYLON.ActionManager(scene);
 
-    scene.actionManager.registerAction(
-        new BABYLON.ExecuteCodeAction(
-            BABYLON.ActionManager.OnKeyDownTrigger,
-            evt => inputMap[evt.sourceEvent.key.toLowerCase()] = true
-        )
-    );
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, evt => {
+        inputMap[evt.sourceEvent.key.toLowerCase()] = true;
+    }));
 
-    scene.actionManager.registerAction(
-        new BABYLON.ExecuteCodeAction(
-            BABYLON.ActionManager.OnKeyUpTrigger,
-            evt => inputMap[evt.sourceEvent.key.toLowerCase()] = false
-        )
-    );
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, evt => {
+        inputMap[evt.sourceEvent.key.toLowerCase()] = false;
+    }));
 
     scene.onBeforeRenderObservable.add(() => {
-
         if (!avatarManager.localAvatar) return;
 
         let deltaX = 0;
@@ -324,15 +140,41 @@ function setupInput(
         if (inputMap["a"]) deltaX -= 1;
         if (inputMap["d"]) deltaX += 1;
 
-        avatarManager.handleAvatarMovement(
-            deltaX,
-            deltaZ,
-            camera,
-            socket
-        );
-        // console.log("🔥 MOVEMENT INPUT:", deltaX, deltaZ);
-        // avatarManager.handleAvatarMovement(0, 1, camera, socket);
+        avatarManager.handleAvatarMovement(deltaX, deltaZ, camera, socket);
     });
 }
-// Jalankan aplikasi setelah window load
+
+/**
+ * 📱 KONTROL MOBILE (JOYSTICK)
+ */
+function setupMobileInput(scene: BABYLON.Scene, avatarManager: AvatarManager, canvas: HTMLCanvasElement, socket: any) {
+    const mobileUI = document.getElementById("mobile-controls");
+    if (mobileUI) mobileUI.style.display = "flex";
+
+    BABYLON.VirtualJoystick.Canvas = canvas;
+    const leftJoystick = new BABYLON.VirtualJoystick(true); // Biru (Movement)
+    const rightJoystick = new BABYLON.VirtualJoystick(false); // Kuning (Rotation)
+
+    leftJoystick.setJoystickSensibility(0.15);
+    rightJoystick.setJoystickSensibility(0.15);
+
+    scene.onBeforeRenderObservable.add(() => {
+        if (!avatarManager.localAvatar) return;
+
+        // Gerakan
+        if (leftJoystick.pressed) {
+            const moveX = leftJoystick.deltaPosition.x;
+            const moveZ = leftJoystick.deltaPosition.y; // Y di joystick adalah Z (maju) di 3D
+
+            avatarManager.handleAvatarMovement(moveX, moveZ, scene.activeCamera, socket);
+        }
+
+        // Rotasi Kamera/Avatar
+        if (rightJoystick.pressed) {
+            avatarManager.localAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
+        }
+    });
+}
+
+// Start
 window.addEventListener("DOMContentLoaded", bootstrap);

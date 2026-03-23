@@ -81,46 +81,30 @@ async function bootstrap() {
 
     // Hubungkan Manager ke Network
     (networkManager as any).voiceManager = voiceManager;
-    networkManager.setWhiteboardManager(wbManager); // <--- HARUS DI SINI
+    networkManager.setWhiteboardManager(wbManager);
+
+    // 🔥 PENTING: Set Local User ID DULU sebelum join/create avatar
+    avatarManager.localUserId = user.uid;
+    console.log("🆔 Local ID Set:", user.uid);
 
     // 4. Aktifkan Mikrofon
     await networkManager.startVoiceChat();
 
-    // 5. Join ke Jaringan (HANYA SATU KALI SAJA, PAKAI USER.ROLE)
+    // 5. Join ke Jaringan (Server akan mengirim list player lain)
     networkManager.joinClass(user.uid, user.displayName || "Anonim", user.role);
 
     // 6. Buat Avatar Lokal
-
-    // const myAvatar = avatarManager.createAvatar({
-    //     uid: user.uid,
-    //     displayName: user.displayName || "Saya",
-    //     role: user.role // Pakai role asli dari email
-    // });
-    // avatarManager.localAvatar = myAvatar;
-
-    const myAvatar = avatarManager.createAvatar({
+    // Karena localUserId sudah di-set di atas, fungsi ini akan otomatis 
+    // mengisi avatarManager.localAvatar setelah GLB selesai load.
+    avatarManager.createAvatar({
         uid: user.uid,
         displayName: user.displayName || "Saya",
         role: user.role
     });
 
-    // tunggu avatar GLB selesai load
-    const checkAvatarReady = setInterval(() => {
-        const realAvatar = (avatarManager as any).avatars.get(user.uid);
-
-        if (realAvatar) {
-            avatarManager.localAvatar = realAvatar;
-            clearInterval(checkAvatarReady);
-
-            console.log("✅ Local avatar ready (GLB)");
-        }
-    }, 100);
+    // ❌ HAPUS LOGIKA setInterval YANG LAMA (checkAvatarReady)
 
     // 7. Logika Pergerakan (PC/Keyboard)
-    // setupInput(scene, myAvatar, (pos, rot) => {
-    //     networkManager.sendMovement(pos, rot);
-    // });
-
     setupInput(
         scene,
         avatarManager,
@@ -129,15 +113,19 @@ async function bootstrap() {
     );
 
     //21032026
+    // Di dalam main.ts (fungsi bootstrap atau init)
+    // const avatarManager = new AvatarManager(scene);
+
+    // Pastikan user sudah login dan punya uid
     if (user) {
-        // 1. Kasih tahu Manager siapa "SAYA"
+        // 🔥 Panggil fungsi ini dulu agar localUserId terisi
         avatarManager.setLocalUserId(user.uid);
 
-        // 2. Buat avatar diri sendiri
+        // Baru kemudian buat avatar
         avatarManager.createAvatar({
             uid: user.uid,
             displayName: user.displayName || "User",
-            role: TEACHER_EMAILS.includes(user.email!) ? ROLES.TEACHER : ROLES.STUDENT
+            role: user.role
         });
     }
 

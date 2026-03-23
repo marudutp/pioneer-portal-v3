@@ -18,10 +18,25 @@ async function loadEnvironment(scene: Scene) {
         // ==========================================
         // 1. AKTIFKAN COLLISION PADA TIAP MESH GEDUNG
         // ==========================================
+        // result.meshes.forEach(mesh => {
+        //     // Hanya aktifkan collision untuk mesh yang punya bentuk (vertices)
+        //     if (mesh.getTotalVertices() > 0) {
+        //         mesh.checkCollisions = true;
+        //     }
+        // });
+        // Di dalam file scene.ts bagian loadEnvironment
         result.meshes.forEach(mesh => {
-            // Hanya aktifkan collision untuk mesh yang punya bentuk (vertices)
+            // 1. Cek apakah mesh punya data visual (vertices)
             if (mesh.getTotalVertices() > 0) {
-                mesh.checkCollisions = true;
+                const name = mesh.name.toLowerCase();
+
+                // 2. 🔥 PROTEKSI: Abaikan mesh transparan atau pembatas yang sering bikin macet
+                if (name.includes("physics") || name.includes("boundary") || name.includes("limit")) {
+                    mesh.checkCollisions = false;
+                    mesh.isVisible = false; // Pastikan dia gak ganggu
+                } else {
+                    mesh.checkCollisions = true;
+                }
             }
         });
 
@@ -31,18 +46,18 @@ async function loadEnvironment(scene: Scene) {
         const bounding = root.getHierarchyBoundingVectors(true);
         const height = bounding.max.y - bounding.min.y;
 
-        const targetHeight = 10; 
+        const targetHeight = 10;
         const scaleFactor = targetHeight / height;
 
         root.scaling.setAll(scaleFactor);
-        
+
         // Paksa hitung ulang posisi setelah scaling
         root.computeWorldMatrix(true);
 
         // 🔥 FIX TENGGELAM: Pastikan lantai gedung tepat di Y = 0
         // Kita geser root-nya supaya titik terendah (lantai) ada di nol
         const newBounding = root.getHierarchyBoundingVectors(true);
-        root.position.y = -newBounding.min.y; 
+        root.position.y = -newBounding.min.y;
 
         // 3. SETUP KAMERA
         const camera = scene.activeCamera as ArcRotateCamera;
@@ -79,7 +94,7 @@ export async function createPioneerScene(canvasId: string) {
     // Setup Dasar
     const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new Vector3(0, 0, 0), scene);
     camera.attachControl(canvas, true);
-    
+
     // Lampu Tunggal (Cukup satu saja agar tidak terlalu terang)
     new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 

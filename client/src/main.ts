@@ -40,6 +40,7 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL || `${window.location.protoco
 let isStarted = false;
 
 async function bootstrap() {
+
     if (isStarted) return;
 
     // 1. UI Overlay Handling
@@ -60,6 +61,7 @@ async function bootstrap() {
 
     // 3. Inisialisasi Engine & Scene
     const { scene, engine, canvas } = await createPioneerScene("renderCanvas");
+    scene.debugLayer.show();
 
     // 4. Inisialisasi Manager
     const avatarManager = new AvatarManager(scene);

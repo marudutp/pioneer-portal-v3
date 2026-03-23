@@ -20,12 +20,12 @@ export class AvatarManager {
     private loadingAvatars: Set<string> = new Set();
 
     public localAvatar: BABYLON.AbstractMesh | null = null;
-    public localUserId: string = ""; 
+    public localUserId: string = "";
     private currentAnim: string = "";
 
     // 🔥 GROUND_Y = 0.91 (0.9 adalah setengah tinggi kapsul 1.8, 
     // + 0.01 adalah jarak aman agar tidak 'stuck' di lantai)
-    private readonly GROUND_Y = 0.91; 
+    private readonly GROUND_Y = 0.95;
 
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
@@ -41,9 +41,9 @@ export class AvatarManager {
         const animMap = this.animations.get(this.localUserId);
         if (!animMap) return;
 
-        const targetKey = name.toLowerCase(); 
+        const targetKey = name.toLowerCase();
         const anim = animMap.get(targetKey);
-        
+
         if (!anim || (this.currentAnim === targetKey && anim.isPlaying)) return;
 
         // Stop animasi lain sebelum menjalankan yang baru
@@ -105,24 +105,26 @@ export class AvatarManager {
 
         this.loadingAvatars.add(user.uid);
         const fileName = user.role === ROLES.TEACHER ? "final_yeti.glb" : "final_frog.glb";
-        const dummy = BABYLON.MeshBuilder.CreateBox("temp_" + user.uid, {size: 0.1}, this.scene);
+        const dummy = BABYLON.MeshBuilder.CreateBox("temp_" + user.uid, { size: 0.1 }, this.scene);
         dummy.isVisible = false;
 
         BABYLON.SceneLoader.ImportMeshAsync("", "/assets/avatar/", fileName, this.scene).then((result) => {
             const root = result.meshes[0];
-            
+
             // 🔥 COLLIDER SETUP (Capsule)
-            const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, { 
-                height: 1.8, 
-                radius: 0.4 
+            const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, {
+                height: 1.8,
+                radius: 0.4
             }, this.scene);
-            
+
             controller.isVisible = false;
             controller.checkCollisions = true;
 
             // 🔥 RAHASIA ANTI-STUCK: Atur Ellipsoid sedikit lebih kecil dari kapsulnya
             // agar tidak 'nyangkut' di pori-pori mesh lantai
-            controller.ellipsoid = new Vector3(0.35, 0.85, 0.35);
+            // controller.ellipsoid = new Vector3(0.35, 0.85, 0.35);
+            // controller.ellipsoidOffset = new Vector3(0, 0, 0);
+            controller.ellipsoid = new Vector3(0.3, 0.8, 0.3);
             controller.ellipsoidOffset = new Vector3(0, 0, 0);
 
             controller.position.set(user.x || 0, this.GROUND_Y, user.z || 0);
@@ -161,7 +163,7 @@ export class AvatarManager {
         // Lerp posisi player lain (Y dikunci ke GROUND_Y)
         const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
         avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.3);
-        
+
         if (data.ry !== undefined) {
             avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.3);
         }

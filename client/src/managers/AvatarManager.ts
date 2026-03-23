@@ -9,111 +9,81 @@ export interface UserData {
     role: string;
     x?: number;
     z?: number;
-    position?: BABYLON.Vector3;
-    rotation?: BABYLON.Vector3;
 }
 
 export class AvatarManager {
-    // private animations: Map<string, AnimationGroup> = new Map();
     private animations: Map<string, Map<string, AnimationGroup>> = new Map();
-
-    private scene: BABYLON.Scene;
     private avatars: Map<string, BABYLON.AbstractMesh> = new Map();
     private guiElements: Map<string, GUI.Rectangle> = new Map();
+    private loadingAvatars: Set<string> = new Set();
+    private scene: BABYLON.Scene;
     private uiManager: GUI.AdvancedDynamicTexture;
 
-    // 🔥 Proteksi Ganda (Race Condition): Mencatat ID yang sedang loading
-    private loadingAvatars: Set<string> = new Set();
-
     public localAvatar: BABYLON.AbstractMesh | null = null;
-    private currentAnimName: string = ""; // Menyimpan kunci asli (lowercase)
-    public localUserId: string = "";
+    public localUserId: string = ""; 
+    private currentAnim: string = "";
+
+    // 🔥 Konstanta Tinggi: Setengah dari tinggi kapsul (1.8 / 2 = 0.9)
+    // Ditambah 0.02 sebagai buffer agar tidak bergesekan (stuck) dengan lantai.
+    private readonly GROUND_Y = 0.92; 
 
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
         this.uiManager = GUI.AdvancedDynamicTexture.CreateFullscreenUI("GlobalUI");
     }
 
-    /**
-     * 🔥 FUNGSI PEMUTAR ANIMASI (FIXED + TYPO TOLERANT)
-     */
-    private playLocalAnimation(name: string) {
-        if (!this.localAvatar || !this.localUserId) return;
+    public setLocalUserId(uid: string) {
+        this.localUserId = uid;
+    }
 
+    private playLocalAnimation(name: string) {
+        if (!this.localUserId) return;
         const animMap = this.animations.get(this.localUserId);
         if (!animMap) return;
 
-        // Force lowercase agar konsisten ("Walk" jadi "walk")
-        const searchKey = name.toLowerCase(); 
+        const targetKey = name.toLowerCase(); 
+        const anim = animMap.get(targetKey);
         
-        // FUZZY SEARCH: Cari key yang mengandung kata 'walk' atau 'idle'
-        // Ini buat jaga-jaga kalau namanya "Armature|walk" atau "walking"
-        const actualKey = Array.from(animMap.keys()).find(k => k.includes(searchKey));
-        
-        if (!actualKey) {
-            console.warn(`❌ Animasi "${name}" tidak ditemukan di model ini.`);
-            return;
-        }
+        if (!anim || (this.currentAnim === targetKey && anim.isPlaying)) return;
 
-        const anim = animMap.get(actualKey);
-        if (!anim) return;
-
-        // Jangan restart jika animasi sama sedang berjalan
-        if (this.currentAnimName === actualKey && anim.isPlaying) return;
-
-        // Stop semua anim avatar ini dengan blending halus
-        animMap.forEach(a => {
-            if (a.isPlaying && a !== anim) {
-                a.stop(); 
-            }
-        });
-
-        // Jalankan animasi baru
+        animMap.forEach(a => { if (a !== anim) a.stop(); });
         anim.start(true);
-        this.currentAnimName = actualKey;
-
-        console.log(`🎬 Berhasil Memutar: ${actualKey}`);
+        this.currentAnim = targetKey;
     }
 
-    /**
-     * MOVEMENT LOGIC
-     */
     public handleAvatarMovement(deltaX: number, deltaZ: number, camera: any, socket: any) {
-        // HANYA gerakkan jika localAvatar sudah terhubung dengan ID yang benar
-        if (!this.localAvatar || !this.localUserId || !camera) return;
+        if (!this.localAvatar || !camera) return;
 
         const speed = 0.15;
         const rotationSpeed = 0.15;
 
         let forward = camera.getForwardRay().direction;
-        forward.y = 0;
-        forward = forward.normalize();
+        let moveDir = new Vector3(forward.x, 0, forward.z).normalize();
+        let rightDir = Vector3.Cross(Vector3.Up(), moveDir).normalize();
 
-        let right = Vector3.Cross(Vector3.Up(), forward).normalize();
-        const move = forward.scale(deltaZ).add(right.scale(-deltaX));
+        const moveVector = moveDir.scale(deltaZ).add(rightDir.scale(-deltaX));
 
-        const isMoving = deltaX !== 0 || deltaZ !== 0;
+        if (deltaX !== 0 || deltaZ !== 0) {
+            // 1. Gerakkan
+            this.localAvatar.moveWithCollisions(moveVector.scale(speed));
 
-        if (isMoving) {
-            // Kita cetak log untuk memastikan event berjalan
-            // console.log("🎬 WALK TRIGGERED");
+            // 2. 🔥 FIX TENGGELAM: Kunci Y setiap frame
+            this.localAvatar.position.y = this.GROUND_Y;
 
-            this.localAvatar.moveWithCollisions(move.scale(speed));
+            // 3. 🔥 FIX JALAN MUNDUR: Offset 180 derajat (Math.PI)
+            const targetRot = Math.atan2(moveVector.x, moveVector.z) + Math.PI;
 
-            const targetRot = Math.atan2(move.x, move.z);
             this.localAvatar.rotation.y = Scalar.LerpAngle(
                 this.localAvatar.rotation.y,
                 targetRot,
                 rotationSpeed
             );
 
-            // Ganti jadilowercase "walk" agar match dengan pencarian
-            this.playLocalAnimation("walk"); 
+            this.playLocalAnimation("walk");
 
-            // KIRIM KE SERVER: Gunakan localUserId yang valid
             if (socket && socket.connected) {
                 socket.emit("player_move", {
-                    uid: this.localUserId, 
+                    uid: this.localUserId,
                     x: this.localAvatar.position.x,
                     y: this.localAvatar.position.y,
                     z: this.localAvatar.position.z,
@@ -122,140 +92,82 @@ export class AvatarManager {
             }
         } else {
             this.playLocalAnimation("idle");
+            this.localAvatar.position.y = this.GROUND_Y;
         }
     }
 
-    /**
-     * 🔥 CREATE AVATAR (With Race Condition Protection)
-     */
     public createAvatar(user: UserData): BABYLON.AbstractMesh {
-        // 1. Cek apakah sudah ada di scene (Mesh utuh)
-        if (this.avatars.has(user.uid)) {
-            return this.avatars.get(user.uid)!;
+        // Anti-Duplikat: Cek jika sudah ada atau sedang loading
+        if (this.avatars.has(user.uid) || this.loadingAvatars.has(user.uid)) {
+            return this.avatars.get(user.uid) || this.scene.getMeshByName("ctrl-" + user.uid)!;
         }
 
-        // 2. 🔥 Cek apakah SEDANG loading (Cegah Ganda Visual/Merge 3 Kepala)
-        if (this.loadingAvatars.has(user.uid)) {
-            console.warn(`⏳ Avatar ${user.displayName} [${user.uid}] sedang loading. Mengabaikan permintaan ganda.`);
-            // Return dummy box temporary agar bootstrap di main.ts tidak error
-            return this.scene.getMeshByName("temp_dummy_" + user.uid) || 
-                   BABYLON.MeshBuilder.CreateBox("temp_dummy_" + user.uid, {size: 0.1}, this.scene);
-        }
-
-        // 3. Tandai sedang loading
         this.loadingAvatars.add(user.uid);
-        console.log(`⏳ Loading avatar untuk: ${user.displayName} [${user.uid}]`);
-
         const fileName = user.role === ROLES.TEACHER ? "final_yeti.glb" : "final_frog.glb";
         const dummy = BABYLON.MeshBuilder.CreateBox("temp_" + user.uid, {size: 0.1}, this.scene);
+        dummy.isVisible = false;
 
-        BABYLON.SceneLoader.ImportMeshAsync("", "/assets/avatar/", fileName, this.scene)
-            .then((result) => {
-                const root = result.meshes[0];
-                const visual = result.meshes.find(m => m.getTotalVertices() > 0);
+        BABYLON.SceneLoader.ImportMeshAsync("", "/assets/avatar/", fileName, this.scene).then((result) => {
+            const root = result.meshes[0];
+            const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, { height: 1.8, radius: 0.4 }, this.scene);
+            controller.isVisible = false;
+            controller.checkCollisions = true;
+            
+            // 🔥 Anti-Stuck: Ellipsoid sedikit lebih ramping dari mesh
+            controller.ellipsoid = new Vector3(0.35, 0.85, 0.35);
 
-                // CONTROLLER (Capsule)
-                const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, {
-                    height: 1.8,
-                    radius: 0.4
-                }, this.scene);
-                controller.isVisible = false;
-                controller.checkCollisions = true;
+            controller.position.set(user.x || 0, this.GROUND_Y, user.z || 0);
+            root.parent = controller;
+            root.position.y = -0.9;
 
-                // Posisi awal (dari data server atau acak)
-                controller.position.set(user.x || 0, 1, user.z || 0);
-
-                // PARENTING GLB KE CONTROLLER
-                root.parent = controller;
-                root.position.y = -0.9; // Pivot model tepat di dasar kapsul
-
-                // Auto Scale
-                if (visual) {
-                    const bbox = visual.getBoundingInfo().boundingBox;
-                    let height = bbox.extendSize.y * 2;
-                    if (!height || height < 0.001) height = 1;
-                    const scale = Math.min(Math.max(1.7 / height, 0.5), 3);
-                    root.scaling.setAll(scale);
-                }
-
-                // ANIMATIONS REGISTER
-                const animMap = new Map<string, AnimationGroup>();
-                result.animationGroups.forEach(anim => {
-                    anim.stop();
-                    animMap.set(anim.name.toLowerCase(), anim);
-                });
-                this.animations.set(user.uid, animMap);
-
-                // Jalankan Idle Default
-                const idle = animMap.get("idle");
-                if (idle) idle.start(true);
-
-                // NAMETAG
-                this.addNameTag(controller, user.uid, user.displayName);
-
-                // SIMPAN KE MAP UTAMA
-                this.avatars.set(user.uid, controller);
-
-                // 🔥 Hapus dari daftar loading (Selesai)
-                this.loadingAvatars.delete(user.uid);
-
-                // 🔥 OWNERSHIP FIX: Jika ID ini sama dengan ID saya
-                if (user.uid === this.localUserId) {
-                    this.localAvatar = controller;
-                    this.currentAnimName = "idle";
-                    console.log(`🌟 Berhasil menguasai avatar: ${user.displayName} [${user.uid}]`);
-                } else {
-                    console.log(`👤 Avatar musuh join: ${user.displayName} [${user.uid}]`);
-                }
-
-                dummy.dispose();
-                // Hapus dummy box temporary jika ada
-                this.scene.getMeshByName("temp_dummy_" + user.uid)?.dispose();
-            })
-            .catch(err => {
-                console.error("❌ Gagal load GLB:", err);
-                this.loadingAvatars.delete(user.uid); // Reset state jika error
-                dummy.dispose();
+            const animMap = new Map<string, AnimationGroup>();
+            result.animationGroups.forEach(anim => {
+                anim.stop();
+                anim.enableBlending = true;
+                animMap.set(anim.name.toLowerCase(), anim);
             });
+
+            this.animations.set(user.uid, animMap);
+            this.avatars.set(user.uid, controller);
+            this.addNameTag(controller, user.uid, user.displayName);
+            this.loadingAvatars.delete(user.uid);
+
+            if (user.uid === this.localUserId) {
+                this.localAvatar = controller;
+                this.playLocalAnimation("idle");
+            }
+            dummy.dispose();
+        });
 
         return dummy;
     }
 
-    private addNameTag(parent: BABYLON.AbstractMesh, uid: string, name: string) {
-        // Hapus nametag lama jika ada (mencegah ganda visual visual)
-        this.guiElements.get(uid)?.dispose();
-
-        const rect = new GUI.Rectangle("tag-" + uid);
-        rect.width = "160px"; rect.height = "40px";
-        rect.cornerRadius = 8; rect.color = "white";
-        rect.thickness = 2; rect.background = "rgba(0,0,0,0.5)";
-        this.uiManager.addControl(rect);
-
-        const label = new GUI.TextBlock();
-        label.text = name; label.fontSize = 14; label.color = "white";
-        rect.addControl(label);
-
-        rect.linkWithMesh(parent);
-        rect.linkOffsetY = -100;
-
-        this.guiElements.set(uid, rect);
-    }
-
-    public updateAvatar(uid: string, position: any, rotation: any) {
-        // JANGAN UPDATE DIRI SENDIRI DARI NETWORK (BIAR TIDAK MENTAL)
+    public updateAvatar(uid: string, data: any) {
+        // 🔥 SINKRONISASI FIX: Jangan update diri sendiri agar tab tidak bentrok
         if (uid === this.localUserId) return;
 
         const avatar = this.avatars.get(uid);
-        if (!avatar || !position) return;
+        if (!avatar || !data) return;
 
-        const targetPos = new BABYLON.Vector3(position.x, position.y, position.z);
-        if (!isNaN(targetPos.x)) {
-            avatar.position = BABYLON.Vector3.Lerp(avatar.position, targetPos, 0.2);
+        avatar.position = Vector3.Lerp(avatar.position, new Vector3(data.x, this.GROUND_Y, data.z), 0.3);
+        if (data.ry !== undefined) {
+            avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.3);
         }
+    }
 
-        if (rotation) {
-            avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, rotation.ry || 0, 0.2);
-        }
+    private addNameTag(parent: BABYLON.AbstractMesh, uid: string, name: string) {
+        if (this.guiElements.has(uid)) return;
+        const rect = new GUI.Rectangle();
+        rect.width = "160px"; rect.height = "40px";
+        rect.cornerRadius = 8; rect.color = "white";
+        rect.background = "rgba(0,0,0,0.5)";
+        this.uiManager.addControl(rect);
+        const label = new GUI.TextBlock();
+        label.text = name; label.fontSize = 14; label.color = "white";
+        rect.addControl(label);
+        rect.linkWithMesh(parent);
+        rect.linkOffsetY = -100;
+        this.guiElements.set(uid, rect);
     }
 
     public removeAvatar(uid: string) {

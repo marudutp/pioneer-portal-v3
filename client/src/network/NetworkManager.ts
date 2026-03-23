@@ -171,12 +171,23 @@ export class NetworkManager {
 
         // Di dalam setupSocketListeners()
 
+        // this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
+        //     // 1. Cek apakah datanya punya UID
+        //     // 2. Cek apakah UID-nya BUKAN kita (Jangan gerakkan diri sendiri lewat sinyal server)
+        //     if (data.uid && data.uid !== this.localUid) {
+        //         // console.log(`Menggerakkan kawan: ${data.uid}`);
+        //         this.avatarManager.updateAvatar(data.uid, data.position, data.rotation);
+        //     }
+        // });
         this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
-            // 1. Cek apakah datanya punya UID
-            // 2. Cek apakah UID-nya BUKAN kita (Jangan gerakkan diri sendiri lewat sinyal server)
             if (data.uid && data.uid !== this.localUid) {
-                // console.log(`Menggerakkan kawan: ${data.uid}`);
-                this.avatarManager.updateAvatar(data.uid, data.position, data.rotation);
+                // 🔥 Gabungkan position dan rotation ke dalam satu objek (argumen kedua)
+                this.avatarManager.updateAvatar(data.uid, {
+                    x: data.position.x,
+                    y: data.position.y,
+                    z: data.position.z,
+                    ry: data.rotation ? (data.rotation.y || data.rotation.ry) : 0
+                });
             }
         });
 

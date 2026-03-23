@@ -21,11 +21,11 @@ export class AvatarManager {
     private uiManager: GUI.AdvancedDynamicTexture;
 
     public localAvatar: BABYLON.AbstractMesh | null = null;
-    public localUserId: string = ""; 
+    public localUserId: string = "";
     private currentAnim: string = "";
 
     // 🔥 Kunci Y agar kaki tetap menapak (Anti-Tenggelam)
-    private readonly GROUND_Y = 0.9; 
+    private readonly GROUND_Y = 0.9;
 
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
@@ -41,9 +41,9 @@ export class AvatarManager {
         const animMap = this.animations.get(this.localUserId);
         if (!animMap) return;
 
-        const targetKey = name.toLowerCase(); 
+        const targetKey = name.toLowerCase();
         const anim = animMap.get(targetKey);
-        
+
         if (!anim || (this.currentAnim === targetKey && anim.isPlaying)) return;
 
         animMap.forEach(a => { if (a !== anim) a.stop(); });
@@ -69,13 +69,13 @@ export class AvatarManager {
         if (deltaX !== 0 || deltaZ !== 0) {
             // 🔥 BYPASS COLLISION: Gunakan addInPlace agar tidak macet
             this.localAvatar.position.addInPlace(moveVector.scale(speed));
-            
+
             // 🔥 PAKSA Y: Tetap di level lantai
             this.localAvatar.position.y = this.GROUND_Y;
 
             // 🔥 FIX JALAN MUNDUR: Coba tanpa Math.PI jika sebelumnya mundur, 
             // atau gunakan Math.PI jika model butuh diputar 180 derajat.
-            const targetRot = Math.atan2(moveVector.x, moveVector.z); 
+            const targetRot = Math.atan2(moveVector.x, moveVector.z);
             this.localAvatar.rotation.y = Scalar.LerpAngle(this.localAvatar.rotation.y, targetRot, rotationSpeed);
 
             this.playLocalAnimation("walk");
@@ -103,16 +103,16 @@ export class AvatarManager {
 
         this.loadingAvatars.add(user.uid);
         const fileName = user.role === ROLES.TEACHER ? "final_yeti.glb" : "final_frog.glb";
-        const dummy = BABYLON.MeshBuilder.CreateBox("temp_" + user.uid, {size: 0.1}, this.scene);
+        const dummy = BABYLON.MeshBuilder.CreateBox("temp_" + user.uid, { size: 0.1 }, this.scene);
         dummy.isVisible = false;
 
         BABYLON.SceneLoader.ImportMeshAsync("", "/assets/avatar/", fileName, this.scene).then((result) => {
             const root = result.meshes[0];
             const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, { height: 1.8, radius: 0.4 }, this.scene);
-            
+
             controller.isVisible = false;
             // 🔥 LEPAS COLLISION: Biar tidak stuck saat loading pertama
-            controller.checkCollisions = false; 
+            controller.checkCollisions = false;
 
             // 🔥 ANTI-TUMPUK: Ambil posisi koordinat terakhir dari server (user.x/z)
             // Jika tidak ada data server, beri posisi random agar tidak saling tindih
@@ -151,17 +151,51 @@ export class AvatarManager {
         return dummy;
     }
 
-    public updateAvatar(uid: string, data: any) {
-        if (uid === this.localUserId) return; 
-        const avatar = this.avatars.get(uid);
-        if (!avatar) return;
+    // public updateAvatar(uid: string, data: any) {
+    //     if (uid === this.localUserId) return; 
+    //     const avatar = this.avatars.get(uid);
+    //     if (!avatar) return;
 
-        // Update posisi halus player lain (Sync posisi terakhir dari server)
+    //     // Update posisi halus player lain (Sync posisi terakhir dari server)
+    //     const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
+    //     avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.4);
+
+    //     if (data.ry !== undefined) {
+    //         avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
+    //     }
+    // }
+    public updateAvatar(uid: string, data: any) {
+        // 🔥 PROTEKSI: Jangan update diri sendiri
+        if (uid === this.localUserId) return;
+
+        const avatar = this.avatars.get(uid);
+        if (!avatar || !data) return;
+
         const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
+
+        // Hitung jarak pindah untuk trigger animasi "walk" orang lain
+        const distance = Vector3.Distance(avatar.position, targetPos);
+
+        // 1. Geser Posisi (Lerp)
         avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.4);
-        
+
+        // 2. Geser Rotasi
         if (data.ry !== undefined) {
             avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
+        }
+
+        // 3. 🔥 REMOTE ANIMATION: Jika orang lain pindah > 0.02 unit, suruh dia "walk"
+        const animMap = this.animations.get(uid);
+        if (animMap) {
+            const animName = distance > 0.02 ? "walk" : "idle";
+            const targetAnim = Array.from(animMap.keys()).find(k => k.includes(animName));
+            if (targetAnim) {
+                const anim = animMap.get(targetAnim);
+                if (anim && !anim.isPlaying) {
+                    animMap.forEach(a => a.stop());
+                    anim.start(true);
+                }
+            }
         }
     }
 

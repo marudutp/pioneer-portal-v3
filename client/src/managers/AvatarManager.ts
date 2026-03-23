@@ -21,11 +21,11 @@ export class AvatarManager {
     private uiManager: GUI.AdvancedDynamicTexture;
 
     public localAvatar: BABYLON.AbstractMesh | null = null;
-    public localUserId: string = ""; 
+    public localUserId: string = "";
     private currentAnim: string = "";
 
-    // 🔥 Kunci posisi Y agar kaki menapak (asumsi lantai di y=0)
-    private readonly GROUND_Y = 0.9; 
+    // 🔥 Kunci Y agar kaki tetap menapak (Anti-Tenggelam)
+    private readonly GROUND_Y = 0.9;
 
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
@@ -36,22 +36,19 @@ export class AvatarManager {
         this.localUserId = uid;
     }
 
-    private playAnimation(uid: string, name: string) {
-        const animMap = this.animations.get(uid);
+    private playLocalAnimation(name: string) {
+        if (!this.localUserId) return;
+        const animMap = this.animations.get(this.localUserId);
         if (!animMap) return;
 
-        const targetKey = name.toLowerCase(); 
+        const targetKey = name.toLowerCase();
         const anim = animMap.get(targetKey);
-        
-        // Proteksi agar tidak memutar animasi yang sama berulang kali (gemetar)
-        if (!anim || (uid === this.localUserId && this.currentAnim === targetKey && anim.isPlaying)) return;
 
-        // Stop semua anim di avatar ini, jalankan anim baru
+        if (!anim || (this.currentAnim === targetKey && anim.isPlaying)) return;
+
         animMap.forEach(a => { if (a !== anim) a.stop(); });
         anim.start(true);
-        
-        // Simpan state animasi saat ini (untuk local player)
-        if (uid === this.localUserId) this.currentAnim = targetKey;
+        this.currentAnim = targetKey;
     }
 
     /**
@@ -63,25 +60,25 @@ export class AvatarManager {
         const speed = 0.15;
         const rotationSpeed = 0.15;
 
-        // Ambil arah horizontal kamera
+        // Ambil arah horizontal saja
         let forward = camera.getForwardRay().direction;
         let moveDir = new Vector3(forward.x, 0, forward.z).normalize();
         let rightDir = Vector3.Cross(Vector3.Up(), moveDir).normalize();
-        
         const moveVector = moveDir.scale(deltaZ).add(rightDir.scale(-deltaX));
 
         if (deltaX !== 0 || deltaZ !== 0) {
-            // 🔥 BYPASS COLLISION: Langsung tambah posisi agar tidak stuck
+            // 🔥 BYPASS COLLISION: Gunakan addInPlace agar tidak macet
             this.localAvatar.position.addInPlace(moveVector.scale(speed));
-            
-            // 🔥 ANTI-TENGGELAM: Paksa Y tetap di GROUND_Y setiap frame
+
+            // 🔥 PAKSA Y: Tetap di level lantai
             this.localAvatar.position.y = this.GROUND_Y;
 
-            // 🔥 FIX JALAN MUNDUR: Offset 180 derajat (Math.PI)
-            const targetRot = Math.atan2(moveVector.x, moveVector.z) + Math.PI;
+            // 🔥 FIX JALAN MUNDUR: Coba tanpa Math.PI jika sebelumnya mundur, 
+            // atau gunakan Math.PI jika model butuh diputar 180 derajat.
+            const targetRot = Math.atan2(moveVector.x, moveVector.z);
             this.localAvatar.rotation.y = Scalar.LerpAngle(this.localAvatar.rotation.y, targetRot, rotationSpeed);
 
-            this.playAnimation(this.localUserId, "walk");
+            this.playLocalAnimation("walk");
 
             if (socket && socket.connected) {
                 socket.emit("player_move", {
@@ -93,41 +90,41 @@ export class AvatarManager {
                 });
             }
         } else {
-            this.playAnimation(this.localUserId, "idle");
+            this.playLocalAnimation("idle");
             this.localAvatar.position.y = this.GROUND_Y;
         }
     }
 
     public createAvatar(user: UserData): BABYLON.AbstractMesh {
-        // Anti-Duplikat visual saat loading (kepala tumpang tindih)
+        // Anti-Duplikat
         if (this.avatars.has(user.uid) || this.loadingAvatars.has(user.uid)) {
             return this.avatars.get(user.uid) || this.scene.getMeshByName("ctrl-" + user.uid)!;
         }
 
         this.loadingAvatars.add(user.uid);
         const fileName = user.role === ROLES.TEACHER ? "final_yeti.glb" : "final_frog.glb";
-        const dummy = BABYLON.MeshBuilder.CreateBox("temp_" + user.uid, {size: 0.1}, this.scene);
+        const dummy = BABYLON.MeshBuilder.CreateBox("temp_" + user.uid, { size: 0.1 }, this.scene);
         dummy.isVisible = false;
 
         BABYLON.SceneLoader.ImportMeshAsync("", "/assets/avatar/", fileName, this.scene).then((result) => {
             const root = result.meshes[0];
             const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, { height: 1.8, radius: 0.4 }, this.scene);
-            
+
             controller.isVisible = false;
-            // 🔥 LEPAS COLLISION: Biar tidak stuck saat spawn pertama kali
-            controller.checkCollisions = false; 
+            // 🔥 LEPAS COLLISION: Biar tidak stuck saat loading pertama
+            controller.checkCollisions = false;
 
             // 🔥 ANTI-TUMPUK: Ambil posisi koordinat terakhir dari server (user.x/z)
-            // Jika tidak ada data server (koordinat 0), beri posisi random agar tidak saling tindih di pusat
-            const startX = (user.x !== undefined && user.x !== 0) ? user.x : (Math.random() * 4 - 2);
-            const startZ = (user.z !== undefined && user.z !== 0) ? user.z : (Math.random() * 4 - 2);
+            // Jika tidak ada data server, beri posisi random agar tidak saling tindih
+            const startX = user.x !== undefined ? user.x : (Math.random() * 6 - 3);
+            const startZ = user.z !== undefined ? user.z : (Math.random() * 6 - 3);
             const startRY = user.ry !== undefined ? user.ry : 0;
 
             controller.position.set(startX, this.GROUND_Y, startZ);
             controller.rotation.y = startRY;
 
             root.parent = controller;
-            root.position.y = -0.9; // Pivot kaki di dasar kapsul
+            root.position.y = -0.9;
 
             const animMap = new Map<string, AnimationGroup>();
             result.animationGroups.forEach(anim => {
@@ -143,11 +140,10 @@ export class AvatarManager {
 
             if (user.uid === this.localUserId) {
                 this.localAvatar = controller;
-                this.playAnimation(user.uid, "idle");
+                this.playLocalAnimation("idle");
                 console.log("🌟 Avatar Lokal Siap di:", controller.position.toString());
             } else {
-                // Orang lain join, set idle di layar kita
-                this.playAnimation(user.uid, "idle");
+                animMap.get("idle")?.start(true);
             }
             dummy.dispose();
         });
@@ -155,38 +151,55 @@ export class AvatarManager {
         return dummy;
     }
 
-    /**
-     * 🔥 FIX SINKRONISASI: Terima data pergerakan orang lain
-     */
+    // public updateAvatar(uid: string, data: any) {
+    //     if (uid === this.localUserId) return; 
+    //     const avatar = this.avatars.get(uid);
+    //     if (!avatar) return;
+
+    //     // Update posisi halus player lain (Sync posisi terakhir dari server)
+    //     const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
+    //     avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.4);
+
+    //     if (data.ry !== undefined) {
+    //         avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
+    //     }
+    // }
     public updateAvatar(uid: string, data: any) {
-        // 🔥 SINKRONISASI FIX: Jangan update diri sendiri agar tab tidak bentrok
-        if (uid === this.localUserId) return; 
+        // 🔥 PROTEKSI: Jangan update diri sendiri
+        if (uid === this.localUserId) return;
 
         const avatar = this.avatars.get(uid);
         if (!avatar || !data) return;
 
         const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
-        
-        // Hitung jarak pindah untuk trigger animasi "walk" orang lain di layarmu
+
+        // Hitung jarak pindah untuk trigger animasi "walk" orang lain
         const distance = Vector3.Distance(avatar.position, targetPos);
 
-        // 1. Update posisi & rotasi player lain (Smooth Lerp)
+        // 1. Geser Posisi (Lerp)
         avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.4);
+
+        // 2. Geser Rotasi
         if (data.ry !== undefined) {
             avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
         }
 
-        // 2. 🔥 REMOTE WALK: Jika dia pindah posisi > 0.05 unit, putar anim walk di layarmu
-        if (distance > 0.05) {
-            this.playAnimation(uid, "walk");
-        } else {
-            // Jika diam, set kembali ke idle
-            this.playAnimation(uid, "idle");
+        // 3. 🔥 REMOTE ANIMATION: Jika orang lain pindah > 0.02 unit, suruh dia "walk"
+        const animMap = this.animations.get(uid);
+        if (animMap) {
+            const animName = distance > 0.02 ? "walk" : "idle";
+            const targetAnim = Array.from(animMap.keys()).find(k => k.includes(animName));
+            if (targetAnim) {
+                const anim = animMap.get(targetAnim);
+                if (anim && !anim.isPlaying) {
+                    animMap.forEach(a => a.stop());
+                    anim.start(true);
+                }
+            }
         }
     }
 
     private addNameTag(parent: BABYLON.AbstractMesh, uid: string, name: string) {
-        if (this.guiElements.has(uid)) return;
         const rect = new GUI.Rectangle();
         rect.width = "160px"; rect.height = "40px";
         rect.cornerRadius = 8; rect.color = "white";

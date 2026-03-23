@@ -95,9 +95,20 @@ async function bootstrap() {
     networkManager.socket.on("new_player", (userData: any) => {
         avatarManager.createAvatar(userData);
     });
-    
-    // Join ke jaringan
+
+    // // Join ke jaringan
+    // networkManager.joinClass(user.uid, user.displayName || "User", user.role);
+    // 4. Player keluar
+    networkManager.socket.on("player_disconnected", (uid: string) => {
+        avatarManager.removeAvatar(uid);
+    });
+
+    // 5. Join Class dan kirim data diri ke server
     networkManager.joinClass(user.uid, user.displayName || "User", user.role);
+
+    // 6. Buat Avatar Lokal SAYA (Hanya 1x panggil di sini)
+    // avatarManager.createAvatar({ uid: user.uid, displayName: user.displayName, role: role });
+
 
     // 6. Buat Avatar Lokal (Hanya 1x panggil di sini)
     avatarManager.createAvatar({

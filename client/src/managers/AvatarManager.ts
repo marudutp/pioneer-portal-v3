@@ -9,6 +9,7 @@ export interface UserData {
     role: string;
     x?: number;
     z?: number;
+    ry?: number;
 }
 
 export class AvatarManager {
@@ -23,9 +24,8 @@ export class AvatarManager {
     public localUserId: string = ""; 
     private currentAnim: string = "";
 
-    // 🔥 Konstanta Tinggi: Setengah dari tinggi kapsul (1.8 / 2 = 0.9)
-    // Ditambah 0.02 sebagai buffer agar tidak bergesekan (stuck) dengan lantai.
-    private readonly GROUND_Y = 0.92; 
+    // 🔥 Kunci Y agar kaki tetap menapak (Anti-Tenggelam)
+    private readonly GROUND_Y = 0.9; 
 
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
@@ -51,33 +51,32 @@ export class AvatarManager {
         this.currentAnim = targetKey;
     }
 
+    /**
+     * 🔥 LOGIKA PERGERAKAN: Lepas Collision (Anti-Stuck)
+     */
     public handleAvatarMovement(deltaX: number, deltaZ: number, camera: any, socket: any) {
         if (!this.localAvatar || !camera) return;
 
         const speed = 0.15;
         const rotationSpeed = 0.15;
 
+        // Ambil arah horizontal saja
         let forward = camera.getForwardRay().direction;
         let moveDir = new Vector3(forward.x, 0, forward.z).normalize();
         let rightDir = Vector3.Cross(Vector3.Up(), moveDir).normalize();
-
         const moveVector = moveDir.scale(deltaZ).add(rightDir.scale(-deltaX));
 
         if (deltaX !== 0 || deltaZ !== 0) {
-            // 1. Gerakkan
-            this.localAvatar.moveWithCollisions(moveVector.scale(speed));
-
-            // 2. 🔥 FIX TENGGELAM: Kunci Y setiap frame
+            // 🔥 BYPASS COLLISION: Gunakan addInPlace agar tidak macet
+            this.localAvatar.position.addInPlace(moveVector.scale(speed));
+            
+            // 🔥 PAKSA Y: Tetap di level lantai
             this.localAvatar.position.y = this.GROUND_Y;
 
-            // 3. 🔥 FIX JALAN MUNDUR: Offset 180 derajat (Math.PI)
-            const targetRot = Math.atan2(moveVector.x, moveVector.z) + Math.PI;
-
-            this.localAvatar.rotation.y = Scalar.LerpAngle(
-                this.localAvatar.rotation.y,
-                targetRot,
-                rotationSpeed
-            );
+            // 🔥 FIX JALAN MUNDUR: Coba tanpa Math.PI jika sebelumnya mundur, 
+            // atau gunakan Math.PI jika model butuh diputar 180 derajat.
+            const targetRot = Math.atan2(moveVector.x, moveVector.z); 
+            this.localAvatar.rotation.y = Scalar.LerpAngle(this.localAvatar.rotation.y, targetRot, rotationSpeed);
 
             this.playLocalAnimation("walk");
 
@@ -97,7 +96,7 @@ export class AvatarManager {
     }
 
     public createAvatar(user: UserData): BABYLON.AbstractMesh {
-        // Anti-Duplikat: Cek jika sudah ada atau sedang loading
+        // Anti-Duplikat
         if (this.avatars.has(user.uid) || this.loadingAvatars.has(user.uid)) {
             return this.avatars.get(user.uid) || this.scene.getMeshByName("ctrl-" + user.uid)!;
         }
@@ -110,13 +109,20 @@ export class AvatarManager {
         BABYLON.SceneLoader.ImportMeshAsync("", "/assets/avatar/", fileName, this.scene).then((result) => {
             const root = result.meshes[0];
             const controller = BABYLON.MeshBuilder.CreateCapsule("ctrl-" + user.uid, { height: 1.8, radius: 0.4 }, this.scene);
-            controller.isVisible = false;
-            controller.checkCollisions = true;
             
-            // 🔥 Anti-Stuck: Ellipsoid sedikit lebih ramping dari mesh
-            controller.ellipsoid = new Vector3(0.35, 0.85, 0.35);
+            controller.isVisible = false;
+            // 🔥 LEPAS COLLISION: Biar tidak stuck saat loading pertama
+            controller.checkCollisions = false; 
 
-            controller.position.set(user.x || 0, this.GROUND_Y, user.z || 0);
+            // 🔥 ANTI-TUMPUK: Ambil posisi koordinat terakhir dari server (user.x/z)
+            // Jika tidak ada data server, beri posisi random agar tidak saling tindih
+            const startX = user.x !== undefined ? user.x : (Math.random() * 6 - 3);
+            const startZ = user.z !== undefined ? user.z : (Math.random() * 6 - 3);
+            const startRY = user.ry !== undefined ? user.ry : 0;
+
+            controller.position.set(startX, this.GROUND_Y, startZ);
+            controller.rotation.y = startRY;
+
             root.parent = controller;
             root.position.y = -0.9;
 
@@ -135,6 +141,9 @@ export class AvatarManager {
             if (user.uid === this.localUserId) {
                 this.localAvatar = controller;
                 this.playLocalAnimation("idle");
+                console.log("🌟 Avatar Lokal Siap di:", controller.position.toString());
+            } else {
+                animMap.get("idle")?.start(true);
             }
             dummy.dispose();
         });
@@ -143,20 +152,20 @@ export class AvatarManager {
     }
 
     public updateAvatar(uid: string, data: any) {
-        // 🔥 SINKRONISASI FIX: Jangan update diri sendiri agar tab tidak bentrok
-        if (uid === this.localUserId) return;
-
+        if (uid === this.localUserId) return; 
         const avatar = this.avatars.get(uid);
-        if (!avatar || !data) return;
+        if (!avatar) return;
 
-        avatar.position = Vector3.Lerp(avatar.position, new Vector3(data.x, this.GROUND_Y, data.z), 0.3);
+        // Update posisi halus player lain (Sync posisi terakhir dari server)
+        const targetPos = new Vector3(data.x, this.GROUND_Y, data.z);
+        avatar.position = Vector3.Lerp(avatar.position, targetPos, 0.4);
+        
         if (data.ry !== undefined) {
-            avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.3);
+            avatar.rotation.y = Scalar.LerpAngle(avatar.rotation.y, data.ry, 0.4);
         }
     }
 
     private addNameTag(parent: BABYLON.AbstractMesh, uid: string, name: string) {
-        if (this.guiElements.has(uid)) return;
         const rect = new GUI.Rectangle();
         rect.width = "160px"; rect.height = "40px";
         rect.cornerRadius = 8; rect.color = "white";
@@ -176,6 +185,5 @@ export class AvatarManager {
         this.guiElements.get(uid)?.dispose();
         this.guiElements.delete(uid);
         this.animations.delete(uid);
-        this.loadingAvatars.delete(uid);
     }
 }

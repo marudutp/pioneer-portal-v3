@@ -11,9 +11,7 @@ import { TEACHER_EMAILS } from "@shared/admin.config";
 import { ROLES } from "@shared/constants";
 import "@babylonjs/loaders/glTF";
 
-// ==========================================
-// 🔥 GLOBAL OPTIMIZATION & DECODER SETUP
-// ==========================================
+// ... (Konfigurasi Draco & KTX2 tetap sama)
 BABYLON.DracoCompression.Configuration = {
     decoder: {
         wasmUrl: "https://cdn.babylonjs.com/draco_wasm_wrapper_gltf.js",
@@ -42,24 +40,22 @@ let isStarted = false;
 async function bootstrap() {
     if (isStarted) return;
 
-    // 1. UI Overlay Handling
+    // 1. UI Overlay
     const overlay = document.getElementById("ui-overlay");
     if (overlay) overlay.style.opacity = "0";
     setTimeout(() => { if (overlay) overlay.style.display = "none"; }, 500);
 
-    console.log("🚀 Memulai Pioneer Portal V3 - Final Sync...");
-
-    // 2. Fase Autentikasi
+    // 2. Auth
     const googleUser = await loginWithGoogle();
     if (!googleUser) return;
-
     const user = googleUser as AppUser;
-    user.role = TEACHER_EMAILS.includes(user.email || "") ? ROLES.TEACHER : ROLES.STUDENT;
 
-    // 3. Inisialisasi Engine & Scene
+    // 3. Tentukan Role (Cukup 1x saja)
+    const myRole = TEACHER_EMAILS.includes(user.email || "") ? ROLES.TEACHER : ROLES.STUDENT;
+    user.role = myRole;
+
+    // 4. Inisialisasi Scene & Manager
     const { scene, engine, canvas } = await createPioneerScene("renderCanvas");
-
-    // 4. Inisialisasi Manager
     const avatarManager = new AvatarManager(scene);
     const voiceManager = new VoiceManager(scene);
     const networkManager = new NetworkManager(SERVER_URL, avatarManager);
@@ -68,75 +64,62 @@ async function bootstrap() {
     (networkManager as any).voiceManager = voiceManager;
     networkManager.setWhiteboardManager(wbManager);
 
-    // 🔥 TAHAP 1: Kunci ID Lokal agar manager tahu siapa "SAYA"
+    // 🔥 TAHAP 1: Kunci ID
     avatarManager.setLocalUserId(user.uid);
+    networkManager.localUid = user.uid;
 
-    // 5. Setup Network & Sync Player Lain
+    // 5. Setup Network Listeners (Pasang antena SEBELUM join)
     await networkManager.startVoiceChat();
 
-    // 🔥 TAHAP 2: Sinkronisasi Posisi Terakhir dari Server
-    // Saat kita baru masuk, server kasih daftar player yang sudah lari duluan
+    // Terima daftar player lama
     networkManager.socket.on("current_players", (players: any[]) => {
-        players.forEach(p => {
-            // Kita render mereka di koordinat x, z terakhir yang dicatat server
-            // Proteksi: Jangan buat avatar lokal lagi di sini
-            if (p.uid !== user.uid) {
-                avatarManager.createAvatar(p);
-            }
+        players.forEach(p => { 
+            if (p.uid !== user.uid) avatarManager.createAvatar(p); 
         });
     });
 
-    // Menerima update posisi real-time dari player lain
+    // Terima update posisi
     networkManager.socket.on("player_moved", (data: any) => {
         avatarManager.updateAvatar(data.uid, data);
     });
 
-    // B. Terima info saat ada orang baru join (Xabi masuk, Marudut harus render Xabi)
+    // Terima orang baru join
     networkManager.socket.on("new_player", (userData: any) => {
-        avatarManager.createAvatar(userData);
+        if (userData.uid !== user.uid) avatarManager.createAvatar(userData);
     });
 
-    // // Join ke jaringan
-    // networkManager.joinClass(user.uid, user.displayName || "User", user.role);
-    // 4. Player keluar
+    // Player keluar
     networkManager.socket.on("player_disconnected", (uid: string) => {
         avatarManager.removeAvatar(uid);
     });
 
-    // 5. Join Class dan kirim data diri ke server
-    networkManager.joinClass(user.uid, user.displayName || "User", user.role);
+    // 🔥 TAHAP 2: Join Jaringan
+    networkManager.joinClass(user.uid, user.displayName || "User", myRole);
 
-    // 6. Buat Avatar Lokal SAYA (Hanya 1x panggil di sini)
-    // avatarManager.createAvatar({ uid: user.uid, displayName: user.displayName, role: role });
-
-
-    // 6. Buat Avatar Lokal (Hanya 1x panggil di sini)
-    avatarManager.createAvatar({
-        uid: user.uid,
-        displayName: user.displayName || "Saya",
-        role: user.role
+    // 🔥 TAHAP 3: Buat Avatar Lokal (HANYA 1 KALI DI SINI)
+    avatarManager.createAvatar({ 
+        uid: user.uid, 
+        displayName: user.displayName || "Saya", 
+        role: myRole 
     });
 
-    // 7. Input Handling (PC & Mobile)
+    // 6. Input Handling
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0);
-
     if (isMobile) {
         setupMobileInput(scene, avatarManager, canvas, networkManager.socket);
     } else {
         setupKeyboardInput(scene, avatarManager, scene.activeCamera as BABYLON.Camera, networkManager.socket);
     }
 
-    // 8. Whiteboard & Ready
+    // 7. UI & Ready
     new WhiteboardUI(wbManager, user.role);
     networkManager.setReady();
 
-    // 9. Render Loop
+    // 8. Render Loop
     isStarted = true;
-    engine.runRenderLoop(() => {
-        scene.render();
-    });
+    engine.runRenderLoop(() => { scene.render(); });
 
-    // Audio & Window Handling
+    // Audio Unlocker
     window.addEventListener("click", () => {
         if (BABYLON.Engine.audioEngine) BABYLON.Engine.audioEngine.unlock();
     }, { once: true });
@@ -144,65 +127,35 @@ async function bootstrap() {
     window.addEventListener("resize", () => { engine.resize(); });
 }
 
-/**
- * ⌨️ KONTROL KEYBOARD (WASD)
- */
+// ... (Fungsi setupKeyboardInput & setupMobileInput tetap sama seperti kodemu)
 function setupKeyboardInput(scene: BABYLON.Scene, avatarManager: AvatarManager, camera: BABYLON.Camera, socket: any) {
     const inputMap: any = {};
     scene.actionManager = new BABYLON.ActionManager(scene);
-
     scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, evt => {
         inputMap[evt.sourceEvent.key.toLowerCase()] = true;
     }));
-
     scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, evt => {
         inputMap[evt.sourceEvent.key.toLowerCase()] = false;
     }));
-
     scene.onBeforeRenderObservable.add(() => {
         if (!avatarManager.localAvatar) return;
-
-        let deltaX = 0;
-        let deltaZ = 0;
-
-        if (inputMap["w"]) deltaZ += 1;
-        if (inputMap["s"]) deltaZ -= 1;
-        if (inputMap["a"]) deltaX -= 1;
-        if (inputMap["d"]) deltaX += 1;
-
-        avatarManager.handleAvatarMovement(deltaX, deltaZ, camera, socket);
+        let dx = 0, dz = 0;
+        if (inputMap["w"]) dz += 1; if (inputMap["s"]) dz -= 1;
+        if (inputMap["a"]) dx -= 1; if (inputMap["d"]) dx += 1;
+        avatarManager.handleAvatarMovement(dx, dz, camera, socket);
     });
 }
 
-/**
- * 📱 KONTROL MOBILE (JOYSTICK)
- */
 function setupMobileInput(scene: BABYLON.Scene, avatarManager: AvatarManager, canvas: HTMLCanvasElement, socket: any) {
     const mobileUI = document.getElementById("mobile-controls");
     if (mobileUI) mobileUI.style.display = "flex";
-
     BABYLON.VirtualJoystick.Canvas = canvas;
-    const leftJoystick = new BABYLON.VirtualJoystick(true);
-    const rightJoystick = new BABYLON.VirtualJoystick(false);
-
-    leftJoystick.setJoystickSensibility(0.15);
-    rightJoystick.setJoystickSensibility(0.15);
-
+    const leftJoy = new BABYLON.VirtualJoystick(true);
+    const rightJoy = new BABYLON.VirtualJoystick(false);
     scene.onBeforeRenderObservable.add(() => {
         if (!avatarManager.localAvatar) return;
-
-        if (leftJoystick.pressed) {
-            avatarManager.handleAvatarMovement(
-                leftJoystick.deltaPosition.x,
-                leftJoystick.deltaPosition.y,
-                scene.activeCamera,
-                socket
-            );
-        }
-
-        if (rightJoystick.pressed) {
-            avatarManager.localAvatar.rotation.y += rightJoystick.deltaPosition.x * 0.05;
-        }
+        if (leftJoy.pressed) avatarManager.handleAvatarMovement(leftJoy.deltaPosition.x, leftJoy.deltaPosition.y, scene.activeCamera, socket);
+        if (rightJoy.pressed) avatarManager.localAvatar.rotation.y += rightJoy.deltaPosition.x * 0.05;
     });
 }
 

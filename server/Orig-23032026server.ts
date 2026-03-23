@@ -166,13 +166,6 @@ io.on('connection', (socket: any) => {
         const { uid, displayName, avatarModel, role } = data;
         // --- BARIS WAJIB ---
         socket.uid = uid; // <--- Titipkan UID ke objek socket supaya pas disconnect bisa dibaca
-        
-        // 🛡️ Satpam Anti-Double Login
-        if (activeUsers.has(uid)) {
-            socket.emit('kick_duplicate', { message: "Waduh Lur, akun ini sudah aktif di tab lain." });
-            setTimeout(() => socket.disconnect(), 1000);
-            return;
-        }
         // -------------------
         // --- FITUR AUTO-KICK (ROOM LIMIT) ---
         // Hitung jumlah siswa yang ada sekarang (tidak menghitung Guru)
@@ -223,19 +216,11 @@ io.on('connection', (socket: any) => {
 
     socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
         const player = activeUsers.get(socket.uid);
-        // if (player) {
-        //     Object.assign(player, data);
-        //     socket.broadcast.emit(NETWORK_EVENTS.AVATAR_UPDATE, {
-        //         uid: socket.uid,
-        //         ...data
-        //     });
-        // }
-         if (player) {
-            Object.assign(player, data); // Simpan state posisi terakhir
+        if (player) {
+            Object.assign(player, data);
             socket.broadcast.emit(NETWORK_EVENTS.AVATAR_UPDATE, {
                 uid: socket.uid,
-                position: { x: data.x, y: data.y, z: data.z },
-                rotation: { y: data.ry }
+                ...data
             });
         }
     });

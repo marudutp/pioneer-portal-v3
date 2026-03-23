@@ -194,6 +194,7 @@ export class NetworkManager {
 
         this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
             // 1. Cek apakah datanya punya UID dan bukan diri kita sendiri
+            console.log("📥 Data kawan diterima dari server:", data.uid); // Tambahkan ini
             if (data.uid && data.uid !== this.localUid) {
 
                 // 🔥 SOLUSI: Bungkus position dan rotation jadi SATU objek (Argumen ke-2)

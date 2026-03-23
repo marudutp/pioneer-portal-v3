@@ -91,6 +91,11 @@ async function bootstrap() {
         avatarManager.updateAvatar(data.uid, data);
     });
 
+    // B. Terima info saat ada orang baru join (Xabi masuk, Marudut harus render Xabi)
+    networkManager.socket.on("new_player", (userData: any) => {
+        avatarManager.createAvatar(userData);
+    });
+    
     // Join ke jaringan
     networkManager.joinClass(user.uid, user.displayName || "User", user.role);
 

@@ -166,7 +166,7 @@ io.on('connection', (socket: any) => {
         const { uid, displayName, avatarModel, role } = data;
         // --- BARIS WAJIB ---
         socket.uid = uid; // <--- Titipkan UID ke objek socket supaya pas disconnect bisa dibaca
-        
+
         // 🛡️ Satpam Anti-Double Login
         if (activeUsers.has(uid)) {
             socket.emit('kick_duplicate', { message: "Waduh Lur, akun ini sudah aktif di tab lain." });
@@ -240,6 +240,14 @@ io.on('connection', (socket: any) => {
         // }
     });
 
+    // Di server.ts - tambahkan handler heartbeat
+    socket.on('heartbeat', (data: any) => {
+        const player = activeUsers.get(data.uid);
+        if (player) {
+            // Update timestamp terakhir
+            player.lastHeartbeat = Date.now();
+        }
+    });
     socket.on('drawData', (data: any) => {
         // console.log("📡 Server: Menerima coretan, menyebarkan ke seluruh kelas...");
         socket.broadcast.emit('remoteDraw', data);

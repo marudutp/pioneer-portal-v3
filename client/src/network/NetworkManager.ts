@@ -30,6 +30,12 @@ export class NetworkManager {
             reconnectionAttempts: 10,
             timeout: 2000
         });
+        // 🔥 TAMBAHKAN: Heartbeat untuk menjaga koneksi aktif
+        setInterval(() => {
+            if (this.socket && this.socket.connected && this.localUid) {
+                this.socket.emit('heartbeat', { uid: this.localUid, timestamp: Date.now() });
+            }
+        }, 5000);
         this.setupSocketListeners();
     }
     public setWhiteboardManager(wb: WhiteboardManager) {
@@ -192,23 +198,51 @@ export class NetworkManager {
         //     }
         // });
 
+        // this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
+        //     // 1. Cek apakah datanya punya UID dan bukan diri kita sendiri
+        //     console.log("📥 Data kawan diterima dari server:", data.uid); // Tambahkan ini
+        //     if (data.uid && data.uid !== this.localUid) {
+
+        //         // 🔥 SOLUSI: Bungkus position dan rotation jadi SATU objek (Argumen ke-2)
+        //         const payload = {
+        //             x: data.position.x,
+        //             y: data.position.y,
+        //             z: data.position.z,
+        //             ry: data.rotation ? (data.rotation.y || data.rotation.ry) : 0
+        //         };
+
+        //         // Sekarang kita panggil cuma 2 argumen: (UID, PAYLOAD)
+        //         this.avatarManager.updateAvatar(data.uid, payload);
+        //     }
+        // });
+        // NetworkManager.ts - setupSocketListeners
         this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
-            // 1. Cek apakah datanya punya UID dan bukan diri kita sendiri
-            console.log("📥 Data kawan diterima dari server:", data.uid); // Tambahkan ini
-            if (data.uid && data.uid !== this.localUid) {
+            // 🔥 PERBAIKAN: Filter lebih ketat
+            if (!data || !data.uid) return;
 
-                // 🔥 SOLUSI: Bungkus position dan rotation jadi SATU objek (Argumen ke-2)
-                const payload = {
-                    x: data.position.x,
-                    y: data.position.y,
-                    z: data.position.z,
-                    ry: data.rotation ? (data.rotation.y || data.rotation.ry) : 0
-                };
-
-                // Sekarang kita panggil cuma 2 argumen: (UID, PAYLOAD)
-                this.avatarManager.updateAvatar(data.uid, payload);
+            // Jangan proses update dari diri sendiri
+            if (data.uid === this.localUid) {
+                return;
             }
+
+            // 🔥 PERBAIKAN: Jangan proses update jika data tidak lengkap
+            if (!data.position || !data.rotation) {
+                console.warn("⚠️ Data update tidak lengkap dari", data.uid);
+                return;
+            }
+
+            console.log(`📡 Update dari ${data.uid}: pos=${data.position.x}, ${data.position.z}`);
+
+            const payload = {
+                x: data.position.x,
+                y: data.position.y,
+                z: data.position.z,
+                ry: data.rotation.y || data.rotation.ry || 0
+            };
+
+            this.avatarManager.updateAvatar(data.uid, payload);
         });
+
 
         this.socket.on("update-whiteboard-slide", (data: { slideUrl: string }) => {
             // Pastikan manager tidak null

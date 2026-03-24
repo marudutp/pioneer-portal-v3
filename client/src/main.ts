@@ -60,9 +60,6 @@ async function bootstrap() {
     const voiceManager = new VoiceManager(scene);
     const networkManager = new NetworkManager(SERVER_URL, avatarManager);
     const wbManager = new WhiteboardManager(scene, networkManager, user.role);
-    
-    // 🔥 INJECT DI SINI
-    avatarManager.setNetworkManager(networkManager);
 
     (networkManager as any).voiceManager = voiceManager;
     networkManager.setWhiteboardManager(wbManager);
@@ -100,10 +97,19 @@ async function bootstrap() {
     networkManager.joinClass(user.uid, user.displayName || "User", myRole);
 
     // 🔥 TAHAP 3: Buat Avatar Lokal (HANYA 1 KALI DI SINI)
-    avatarManager.createAvatar({
+    await avatarManager.createAvatar({
         uid: user.uid,
         displayName: user.displayName || "Saya",
         role: myRole
+    });
+    // 🔥 TAMBAHKAN: Pastikan local avatar sudah terdaftar sebelum input aktif
+    await new Promise(resolve => {
+        const checkInterval = setInterval(() => {
+            if (avatarManager.localAvatar) {
+                clearInterval(checkInterval);
+                resolve(true);
+            }
+        }, 100);
     });
 
     // 6. Input Handling

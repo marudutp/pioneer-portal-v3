@@ -19,7 +19,7 @@ export class AvatarManager {
     private loadingAvatars: Set<string> = new Set();
     private scene: BABYLON.Scene;
     private uiManager: GUI.AdvancedDynamicTexture;
-
+    private networkManager: any = null;
     public localAvatar: BABYLON.AbstractMesh | null = null;
     public localUserId: string = "";
     private currentAnim: string = "";
@@ -36,6 +36,9 @@ export class AvatarManager {
         this.localUserId = uid;
     }
 
+    public setNetworkManager(nm: any) {
+        this.networkManager = nm;
+    }
     private playLocalAnimation(name: string) {
         if (!this.localUserId) return;
         const animMap = this.animations.get(this.localUserId);
@@ -80,14 +83,26 @@ export class AvatarManager {
 
             this.playLocalAnimation("walk");
 
+            // if (socket && socket.connected) {
+            //     socket.emit("player_move", {
+            //         uid: this.localUserId,
+            //         x: this.localAvatar.position.x,
+            //         y: this.localAvatar.position.y,
+            //         z: this.localAvatar.position.z,
+            //         ry: this.localAvatar.rotation.y
+            //     });
+            // }
             if (socket && socket.connected) {
-                socket.emit("player_move", {
-                    uid: this.localUserId,
-                    x: this.localAvatar.position.x,
-                    y: this.localAvatar.position.y,
-                    z: this.localAvatar.position.z,
-                    ry: this.localAvatar.rotation.y
-                });
+                // ❌ jangan pakai socket langsung
+                // socket.emit("player_move", ...)
+
+                // ✅ gunakan NetworkManager
+                if (this.networkManager) {
+                    this.networkManager.sendMovement(
+                        this.localAvatar.position,
+                        this.localAvatar.rotation
+                    );
+                }
             }
         } else {
             this.playLocalAnimation("idle");

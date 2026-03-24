@@ -223,21 +223,21 @@ io.on('connection', (socket: any) => {
 
     socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
         const player = activeUsers.get(socket.uid);
-        // if (player) {
-        //     Object.assign(player, data);
-        //     socket.broadcast.emit(NETWORK_EVENTS.AVATAR_UPDATE, {
-        //         uid: socket.uid,
-        //         ...data
-        //     });
-        // }
-         if (player) {
-            Object.assign(player, data); // Simpan state posisi terakhir
+        if (player) {
+            Object.assign(player, data);
             socket.broadcast.emit(NETWORK_EVENTS.AVATAR_UPDATE, {
                 uid: socket.uid,
-                position: { x: data.x, y: data.y, z: data.z },
-                rotation: { y: data.ry }
+                ...data
             });
         }
+        //  if (player) {
+        //     Object.assign(player, data); // Simpan state posisi terakhir
+        //     socket.broadcast.emit(NETWORK_EVENTS.AVATAR_UPDATE, {
+        //         uid: socket.uid,
+        //         position: { x: data.x, y: data.y, z: data.z },
+        //         rotation: { y: data.ry }
+        //     });
+        // }
     });
 
     socket.on('drawData', (data: any) => {

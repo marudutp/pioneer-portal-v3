@@ -60,6 +60,9 @@ async function bootstrap() {
     const voiceManager = new VoiceManager(scene);
     const networkManager = new NetworkManager(SERVER_URL, avatarManager);
     const wbManager = new WhiteboardManager(scene, networkManager, user.role);
+    
+    // 🔥 INJECT DI SINI
+    avatarManager.setNetworkManager(networkManager);
 
     (networkManager as any).voiceManager = voiceManager;
     networkManager.setWhiteboardManager(wbManager);
@@ -73,8 +76,8 @@ async function bootstrap() {
 
     // Terima daftar player lama
     networkManager.socket.on("current_players", (players: any[]) => {
-        players.forEach(p => { 
-            if (p.uid !== user.uid) avatarManager.createAvatar(p); 
+        players.forEach(p => {
+            if (p.uid !== user.uid) avatarManager.createAvatar(p);
         });
     });
 
@@ -97,10 +100,10 @@ async function bootstrap() {
     networkManager.joinClass(user.uid, user.displayName || "User", myRole);
 
     // 🔥 TAHAP 3: Buat Avatar Lokal (HANYA 1 KALI DI SINI)
-    avatarManager.createAvatar({ 
-        uid: user.uid, 
-        displayName: user.displayName || "Saya", 
-        role: myRole 
+    avatarManager.createAvatar({
+        uid: user.uid,
+        displayName: user.displayName || "Saya",
+        role: myRole
     });
 
     // 6. Input Handling

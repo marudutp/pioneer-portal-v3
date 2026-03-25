@@ -6,7 +6,7 @@
     <title>Pioneer Admin Dashboard</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        /* SAMA SEPERTI STYLE SEBELUMNYA */
+        /* ... style sama seperti sebelumnya ... */
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background: #1a1a1a; 
@@ -144,6 +144,15 @@
         .perf-value.good { color: #00ff00; }
         .perf-value.warning { color: #ffaa00; }
         .perf-value.bad { color: #ff4d4d; }
+        .teacher-badge {
+            background: #ffaa00;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
         @media (max-width: 768px) { body { padding: 10px; } th, td { padding: 8px; font-size: 12px; } }
     </style>
 </head>
@@ -190,7 +199,7 @@
         
         <!-- Broadcast Card -->
         <div class="card">
-            <h3>📢 Broadcast Pengumuman</h3>
+            <h3>📢 Broadcast Pengumuman <span class="teacher-badge">GURU MODE</span></h3>
             <input type="text" id="broadcastMsg" placeholder="Ketik pesan untuk semua murid..." onkeypress="if(event.key==='Enter') sendBroadcast()">
             <button class="btn-broadcast" onclick="sendBroadcast()">📢 KIRIM KE SEMUA LAYAR</button>
             <div id="broadcastResult" style="margin-top:10px; font-size:12px;"></div>
@@ -198,7 +207,7 @@
         
         <!-- Slide Upload -->
         <div class="card">
-            <h3>📸 Upload Slide Presentasi</h3>
+            <h3>📸 Upload Slide Presentasi <span class="teacher-badge">GURU MODE</span></h3>
             <div class="flex-row">
                 <input type="file" id="slideUpload" accept="image/*">
                 <button onclick="uploadSlide()" style="background:#00ff00;color:#000;padding:12px 24px;">Upload & Broadcast</button>
@@ -245,10 +254,10 @@
             <div style="overflow-x: auto;">
                  <table>
                     <thead>
-                        <tr><th>Nama</th><th>UID</th><th>Role</th><th>Aksi</th></tr>
+                        <tr><th>Nama</th><th>UID</th><th>Role</th><th>Aksi</th> </tr>
                     </thead>
                     <tbody id="user-table">
-                        <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+                        <tr><td colspan="4" style="text-align:center;">Loading...</td> </tr>
                     </tbody>
                  </table>
                 <button class="btn-refresh" onclick="refreshUsers()" style="margin-top:10px;">🔄 Refresh</button>
@@ -283,16 +292,55 @@
                 return false;
             }
             
+            // Tampilkan info admin dengan badge GURU
             document.getElementById('adminInfo').innerHTML = `
                 👑 ${adminInfo.displayName} (${adminInfo.username})
+                <span class="teacher-badge">${adminInfo.role || 'TEACHER'}</span>
             `;
             return true;
         }
         
         function logout() {
+            // Hapus admin dari activeUsers juga
+            if (socket && socket.connected && adminInfo) {
+                socket.emit('admin_unregister', { uid: adminInfo.uid });
+            }
             localStorage.removeItem('admin_token');
             localStorage.removeItem('admin_info');
             window.location.href = 'admin.html';
+        }
+        
+        // ============================================
+        // REGISTER ADMIN AS TEACHER
+        // ============================================
+        async function registerAdminAsTeacher(socketId) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-token': adminToken
+                    },
+                    body: JSON.stringify({
+                        socketId: socketId,
+                        uid: adminInfo.uid,
+                        displayName: `${adminInfo.displayName} (Admin)`
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Admin registered as TEACHER');
+                    addLog('✅ Terdaftar sebagai GURU di kelas', 'info');
+                    return true;
+                } else {
+                    console.error('Failed to register admin:', result);
+                    return false;
+                }
+            } catch (err) {
+                console.error('Register error:', err);
+                return false;
+            }
         }
         
         // ============================================
@@ -390,12 +438,21 @@
                 return originalEmit.apply(this, args);
             };
             
-            socket.on('connect', () => {
+            socket.on('connect', async () => {
                 console.log('✅ Socket connected');
                 const statusDiv = document.getElementById('connection-status');
                 statusDiv.querySelector('.connection-dot').className = 'connection-dot connected';
                 document.getElementById('status-text').innerText = 'Terhubung';
                 addLog('✅ Terhubung ke server!', 'info');
+                
+                // 🔥 KRUSIAL: Register admin sebagai TEACHER
+                const registered = await registerAdminAsTeacher(socket.id);
+                if (registered) {
+                    addLog('✅ Admin terdaftar sebagai GURU, broadcast siap digunakan!', 'info');
+                } else {
+                    addLog('⚠️ Gagal register sebagai GURU, broadcast mungkin tidak berfungsi', 'warning');
+                }
+                
                 refreshUsers();
                 socket.emit('admin_request_stats');
             });
@@ -422,7 +479,7 @@
                 addLog(`📊 Kapasitas: ${data.current}/${data.max} siswa`, 'info');
             });
             
-            // BROADCAST MASUK - CONFIRMATION
+            // BROADCAST CONFIRMATION
             socket.on('announcement', (message) => {
                 console.log('📢 ANNOUNCEMENT CONFIRMED:', message);
                 const resultDiv = document.getElementById('broadcastResult');
@@ -514,9 +571,9 @@
                 return;
             }
             
-            console.log('📢 Sending broadcast:', msg);
+            console.log('📢 Sending broadcast as TEACHER:', msg);
             socket.emit('admin_broadcast', msg);
-            addLog(`📢 Broadcast dikirim: "${msg}"`, 'info');
+            addLog(`📢 Broadcast dikirim (sebagai GURU): "${msg}"`, 'info');
             
             const resultDiv = document.getElementById('broadcastResult');
             resultDiv.innerHTML = '⏳ Mengirim broadcast...';

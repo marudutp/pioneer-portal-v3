@@ -123,25 +123,27 @@ app.get('/admin', (req, res) => {
 app.use(express.json());
 
 // Endpoint login admin
+// Endpoint login admin
 app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body;
-    
+
     console.log(`🔐 Admin login attempt: ${username}`);
-    
-    // Cek credentials
-    const admin = ADMIN_CREDENTIALS[username as keyof typeof ADMIN_CREDENTIALS];
-    
+
+    const admin = ADMIN_CREDENTIALS[username];
+
     if (admin && admin.password === password) {
-        // Generate token sederhana (bisa paket JWT nanti)
+        // Generate token
         const token = Buffer.from(`${username}:${Date.now()}`).toString('base64');
-        
+
+        // 🔥 PENTING: Kirim juga role TEACHER
         res.json({
             success: true,
             token: token,
             admin: {
                 username: username,
                 displayName: admin.displayName,
-                uid: admin.uid
+                uid: admin.uid,
+                role: ROLES.TEACHER  // Tambahkan role teacher
             }
         });
     } else {
@@ -152,19 +154,48 @@ app.post('/api/admin/login', (req, res) => {
     }
 });
 
+// 🔥 TAMBAHKAN: Endpoint untuk register admin socket connection
+app.post('/api/admin/register', verifyAdminToken, (req, res) => {
+    const { socketId, uid, displayName } = req.body;
+
+    // Daftarkan admin sebagai user dengan role TEACHER
+    const adminUser = {
+        uid: uid,
+        socketId: socketId,
+        displayName: displayName,
+        role: ROLES.TEACHER,
+        model: "yeti",
+        x: 0, y: -0.9, z: 0,
+        rotation: Math.PI,
+        lastUpdate: Date.now(),
+        lastHeartbeat: Date.now()
+    };
+
+    activeUsers.set(uid, adminUser);
+
+    if (!currentTeacherId) {
+        currentTeacherId = uid;
+    }
+
+    console.log(`👨‍🏫 Admin registered as TEACHER: ${displayName} (${uid})`);
+    broadcastCapacity();
+
+    res.json({ success: true });
+});
+
 // Middleware verifikasi token (opsional)
 function verifyAdminToken(req: any, res: any, next: any) {
     const token = req.headers['x-admin-token'];
-    
+
     if (!token) {
         return res.status(401).json({ error: 'No token provided' });
     }
-    
+
     // Verifikasi token sederhana
     try {
         const decoded = Buffer.from(token, 'base64').toString();
         const [username, timestamp] = decoded.split(':');
-        
+
         if (ADMIN_CREDENTIALS[username as keyof typeof ADMIN_CREDENTIALS]) {
             req.adminUser = username;
             next();

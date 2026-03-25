@@ -186,7 +186,7 @@
             margin-top: 10px;
         }
         .btn-refresh { background: #3d3d3d; color: white; }
-        input, textarea {
+        input {
             width: 100%;
             padding: 12px;
             box-sizing: border-box;
@@ -195,7 +195,7 @@
             color: white;
             border-radius: 5px;
         }
-        input:focus, textarea:focus { outline: none; border-color: #00ff00; }
+        input:focus { outline: none; border-color: #00ff00; }
         .status-badge {
             padding: 4px 10px;
             border-radius: 15px;
@@ -242,6 +242,14 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+        .server-url {
+            background: #000;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #ffaa00;
+        }
         .perf-card {
             background: rgba(0,0,0,0.5);
             padding: 15px;
@@ -257,7 +265,6 @@
         .perf-value.good { color: #00ff00; }
         .perf-value.warning { color: #ffaa00; }
         .perf-value.bad { color: #ff4d4d; }
-        .chart-container { height: 150px; margin-top: 10px; }
         @media (max-width: 768px) { body { padding: 10px; } th, td { padding: 8px; font-size: 12px; } }
     </style>
 </head>
@@ -268,6 +275,14 @@
             <div class="connection-status" id="connection-status">
                 <span class="connection-dot disconnected"></span>
                 <span id="status-text">Menghubungkan...</span>
+            </div>
+        </div>
+        
+        <!-- Server Info -->
+        <div class="card" style="background:#2d2d2d; padding:12px;">
+            <div class="flex-row" style="justify-content: space-between;">
+                <span>🔌 Backend Server:</span>
+                <span class="server-url" id="server-url">Loading...</span>
             </div>
         </div>
         
@@ -345,7 +360,7 @@
         <div class="card">
             <h3>👥 Siswa Online (<span id="count">0</span>/10)</h3>
             <div style="overflow-x: auto;">
-                <table>
+                 <table>
                     <thead>
                         <tr><th>Nama</th><th>UID</th><th>Role</th><th>Aksi</th></tr>
                     </thead>
@@ -369,11 +384,17 @@
 
     <script>
         // ============================================
-        // KONFIGURASI - PAKAI URL YANG BENAR
+        // KONFIGURASI - GANTI DENGAN URL BACKEND REALTIME
         // ============================================
-        // Ambil URL dari window.location (untuk Replit, ini sudah benar)
-        const SERVER_URL = window.location.origin;
-        console.log('🌐 Server URL:', SERVER_URL);
+        // ⚠️⚠️⚠️ GANTI URL INI DENGAN URL BACKEND SERVER REANDPLE/REPLIT ANDA ⚠️⚠️⚠️
+        // Contoh: "https://pioneer-portal-v3.replit.app" atau "https://your-server.replit.app"
+        const BACKEND_URL = "https://f75d9c6d-8a1f-441c-84e8-4c3c3764296a-00-2d0b4ng7svqyl.sisko.replit.dev";
+        
+        // Jika tidak bisa, coba gunakan port 8080 atau 3000
+        // const BACKEND_URL = "https://f75d9c6d-8a1f-441c-84e8-4c3c3764296a-00-2d0b4ng7svqyl.sisko.replit.dev:8080";
+        
+        console.log('🌐 Backend URL:', BACKEND_URL);
+        document.getElementById('server-url').innerText = BACKEND_URL;
         
         let socket = null;
         
@@ -437,7 +458,7 @@
                 clearInterval(testInterval);
                 isTesting = false;
                 const avgRate = (testPackets/10).toFixed(1);
-                addLog(`✅ Test selesai! ${avgRate} pkt/s (target: 20 pkt/s)`, avgRate <= 25 ? 'info' : 'warning');
+                addLog(`✅ Test selesai! ${avgRate} pkt/s (target optimal: <25 pkt/s)`, avgRate <= 25 ? 'info' : 'warning');
             }, 10000);
         }
         
@@ -454,14 +475,15 @@
         // ============================================
         
         function initSocket() {
-            addLog('🔌 Mencoba konek ke: ' + SERVER_URL, 'info');
+            addLog('🔌 Mencoba konek ke: ' + BACKEND_URL, 'info');
             
-            socket = io(SERVER_URL, {
+            socket = io(BACKEND_URL, {
                 transports: ['websocket', 'polling'],
                 withCredentials: true,
                 reconnection: true,
                 reconnectionAttempts: 10,
-                reconnectionDelay: 1000
+                reconnectionDelay: 1000,
+                timeout: 20000
             });
             
             // Intercept untuk tracking
@@ -472,14 +494,12 @@
             };
             
             socket.on('connect', () => {
-                console.log('✅ Socket connected');
+                console.log('✅ Socket connected to:', BACKEND_URL);
                 const statusDiv = document.getElementById('connection-status');
                 statusDiv.querySelector('.connection-dot').className = 'connection-dot connected';
                 document.getElementById('status-text').innerText = 'Terhubung';
-                addLog('✅ Terhubung ke server!', 'info');
+                addLog('✅ Terhubung ke server backend!', 'info');
                 refreshUsers();
-                // Minta data kapasitas
-                socket.emit('admin_request_stats');
             });
             
             socket.on('disconnect', () => {
@@ -491,7 +511,7 @@
             });
             
             socket.on('connect_error', (err) => {
-                console.error('Socket error:', err);
+                console.error('Socket error:', err.message);
                 addLog(`❌ Koneksi error: ${err.message}`, 'error');
                 const statusDiv = document.getElementById('connection-status');
                 statusDiv.querySelector('.connection-dot').className = 'connection-dot disconnected';
@@ -511,6 +531,12 @@
             socket.on('announcement', (message) => {
                 console.log('📢 Announcement received:', message);
                 addLog(`📢 Pengumuman terkirim: "${message}"`, 'info');
+                // Optional: tampilkan notifikasi
+                const notification = document.createElement('div');
+                notification.style.cssText = 'position:fixed;top:20px;right:20px;background:#00ff00;color:#000;padding:10px;border-radius:5px;z-index:9999;';
+                notification.innerHTML = `📢 ${message}`;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
             });
             
             socket.on('user_kicked', (uid) => {
@@ -520,17 +546,17 @@
             
             socket.on('error_message', (data) => {
                 addLog(`⚠️ ${data.title}: ${data.message}`, 'error');
+                alert(`${data.title}\n\n${data.message}`);
             });
         }
         
         // REFRESH USERS - PAKAI API
         async function refreshUsers() {
             try {
-                addLog('🔄 Refresh user list...', 'info');
-                const response = await fetch(`${SERVER_URL}/api/admin/users`);
+                const response = await fetch(`${BACKEND_URL}/api/admin/users`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const users = await response.json();
-                console.log('👥 Users:', users);
+                console.log('👥 Users from API:', users);
                 
                 const tableBody = document.getElementById('user-table');
                 const students = users.filter(u => u.role !== 'teacher');
@@ -577,10 +603,10 @@
                 return;
             }
             
-            console.log('📢 Sending broadcast:', msg);
+            console.log('📢 Sending broadcast to server:', msg);
             socket.emit('admin_broadcast', msg);
             addLog(`📢 Broadcast dikirim: "${msg}"`, 'info');
-            alert('✅ Pesan berhasil dikirim ke semua murid!');
+            alert('✅ Pesan berhasil dikirim ke server!');
             document.getElementById('broadcastMsg').value = '';
         }
         
@@ -597,7 +623,7 @@
             addLog(`📤 Upload slide: ${file.name}`, 'info');
             
             try {
-                const response = await fetch(`${SERVER_URL}/upload-material`, {
+                const response = await fetch(`${BACKEND_URL}/upload-material`, {
                     method: 'POST',
                     body: formData
                 });

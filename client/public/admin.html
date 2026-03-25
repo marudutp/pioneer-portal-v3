@@ -1,859 +1,201 @@
-<!-- <!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Pioneer Admin Dashboard</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
-        .card { background: #2d2d2d; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px;}
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
-        th { background: #3d3d3d; color: #00ff00; }
-        button { cursor: pointer; padding: 5px 10px; border-radius: 5px; border: none; }
-        .btn-kick { background: #ff4d4d; color: white; }
-        .btn-broadcast { background: #00ff00; color: #000; font-weight: bold; padding: 10px; width: 100%; margin-top: 10px; }
-        input { width: 100%; padding: 10px; box-sizing: border-box; background: #3d3d3d; border: 1px solid #555; color: white; }
-        .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
-        .online { background: #00ff00; color: #000; }
-    </style>
-</head>
-<body>
-    <h1>🚀 Pioneer Admin Dashboard v1.1</h1>
-    
-    <div id="connection-status" style="margin-bottom: 10px; color: #ff4d4d;">
-        🔴 Menghubungkan ke Server Replit...
-    </div>
-
-    <div class="card">
-        <h3>📢 Broadcast Pengumuman</h3>
-        <input type="text" id="broadcastMsg" placeholder="Ketik pesan untuk semua murid...">
-        <button class="btn-broadcast" onclick="sendBroadcast()">KIRIM KE SEMUA LAYAR</button>
-    </div>
-
-    <div class="card">
-        <h3>👥 Siswa Online (<span id="count">0</span>/10)</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Nama</th>
-                    <th>UID</th>
-                    <th>Role</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="user-table"></tbody>
-        </table>
-    </div>
-
-    <script>
-        // ⚠️ GANTI ALAMAT INI dengan URL 'WebView' Replit Om yang asli!
-        const REPLIT_URL = "https://f75d9c6d-8a1f-441c-84e8-4c3c3764296a-00-2d0b4ng7svqyl.sisko.replit.dev"; 
-
-        // Hubungkan Socket ke Replit
-        const socket = io(REPLIT_URL, {
-            transports: ['polling', 'websocket'],
-            withCredentials: true
-        });
-
-        socket.on('connect', () => {
-            const status = document.getElementById('connection-status');
-            status.innerText = "🟢 Terhubung ke Replit";
-            status.style.color = "#00ff00";
-            refreshUsers();
-        });
-
-        socket.on('connect_error', (err) => {
-            const status = document.getElementById('connection-status');
-            status.innerText = "🔴 Gagal Konek ke Replit: " + err.message;
-            status.style.color = "#ff4d4d";
-        });
-
-        function refreshUsers() {
-            // Fetch data dari API Replit
-            fetch(`${REPLIT_URL}/api/admin/users`)
-                .then(res => res.json())
-                .then(users => {
-                    const table = document.getElementById('user-table');
-                    const count = document.getElementById('count');
-                    table.innerHTML = '';
-                    
-                    // Filter yang bukan teacher
-                    const students = users.filter(u => u.role !== 'teacher');
-                    count.innerText = students.length;
-
-                    users.forEach(user => {
-                        const row = `<tr>
-                            <td>${user.displayName}</td>
-                            <td>${user.uid ? user.uid.substring(0, 8) : '---'}...</td>
-                            <td><span class="status-badge ${user.role === 'teacher' ? '' : 'online'}">${user.role}</span></td>
-                            <td>
-                                <button class="btn-kick" onclick="kickUser('${user.uid}')">KICK</button>
-                            </td>
-                        </tr>`;
-                        table.innerHTML += row;
-                    });
-                })
-                .catch(err => console.error("Gagal ambil data user:", err));
-        }
-
-        function kickUser(uid) {
-            if(confirm('Yakin mau nendang user ini, Om Marudut?')) {
-                socket.emit('admin_kick_user', uid);
-                setTimeout(refreshUsers, 1000);
-            }
-        }
-
-        function sendBroadcast() {
-            const msg = document.getElementById('broadcastMsg').value;
-            if(msg) {
-                socket.emit('admin_broadcast', msg);
-                alert('Pesan dikirim ke seluruh kelas!');
-                document.getElementById('broadcastMsg').value = '';
-            }
-        }
-
-        // Auto-refresh setiap 5 detik
-        setInterval(refreshUsers, 5000);
-    </script>
-</body>
-</html> -->
-
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pioneer Admin Dashboard</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <title>Pioneer Admin Dashboard - Login</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
-            padding: 20px;
-            margin: 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
+        
+        .login-container {
+            background: rgba(45, 45, 45, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #00ff00;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-
-        h1 {
-            margin-bottom: 20px;
+        
+        .login-container h1 {
+            color: #00ff00;
+            text-align: center;
+            margin-bottom: 30px;
             font-size: 28px;
         }
-
-        .card {
-            background: #2d2d2d;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #444;
-            margin-bottom: 20px;
-        }
-
-        .card h3 {
-            margin-bottom: 15px;
-            color: #00ff00;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: #2d2d2d;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            border-left: 3px solid #00ff00;
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #00ff00;
-        }
-
-        .stat-label {
+        
+        .login-container h1 small {
             font-size: 12px;
             color: #aaa;
-            margin-top: 5px;
+            display: block;
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        
+        .input-group {
+            margin-bottom: 20px;
         }
-
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #444;
-        }
-
-        th {
-            background: #3d3d3d;
-            color: #00ff00;
-        }
-
-        tr:hover {
-            background: rgba(0, 255, 0, 0.05);
-        }
-
-        button {
-            cursor: pointer;
-            padding: 8px 16px;
-            border-radius: 5px;
-            border: none;
+        
+        .input-group label {
+            display: block;
+            color: #fff;
+            margin-bottom: 8px;
             font-weight: bold;
-            transition: all 0.2s;
         }
-
-        button:hover {
-            transform: translateY(-1px);
-            filter: brightness(1.1);
-        }
-
-        .btn-kick {
-            background: #ff4d4d;
-            color: white;
-        }
-
-        .btn-broadcast {
-            background: #00ff00;
-            color: #000;
-            font-weight: bold;
-            padding: 12px;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .btn-refresh {
-            background: #3d3d3d;
-            color: white;
-        }
-
-        input {
+        
+        .input-group input {
             width: 100%;
             padding: 12px;
-            box-sizing: border-box;
             background: #3d3d3d;
             border: 1px solid #555;
             color: white;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
         }
-
-        input:focus {
+        
+        .input-group input:focus {
             outline: none;
             border-color: #00ff00;
+            box-shadow: 0 0 5px rgba(0,255,0,0.3);
         }
-
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 11px;
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #00ff00, #00cc00);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: bold;
-            display: inline-block;
+            cursor: pointer;
+            transition: all 0.3s;
         }
-
-        .status-online {
-            background: #00ff00;
-            color: #000;
+        
+        button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
         }
-
-        .status-teacher {
-            background: #ffaa00;
-            color: #000;
-        }
-
-        .connection-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .connection-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .connection-dot.connected {
-            background: #00ff00;
-            box-shadow: 0 0 5px #00ff00;
-        }
-
-        .connection-dot.disconnected {
-            background: #ff4d4d;
-        }
-
-        .log-panel {
-            max-height: 200px;
-            overflow-y: auto;
-            background: #1a1a1a;
+        
+        .error-message {
+            background: rgba(255,77,77,0.2);
+            border: 1px solid #ff4d4d;
+            color: #ff4d4d;
             padding: 10px;
             border-radius: 8px;
-            font-family: monospace;
-            font-size: 11px;
-        }
-
-        .log-entry {
-            padding: 4px;
-            border-bottom: 1px solid #333;
-        }
-
-        .log-entry.info {
-            color: #0f0;
-        }
-
-        .log-entry.warning {
-            color: #ffaa00;
-        }
-
-        .log-entry.error {
-            color: #ff4d4d;
-        }
-
-        .flex-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .status-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
+            text-align: center;
+            font-size: 14px;
         }
-
-        .server-url {
-            background: #000;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-family: monospace;
+        
+        .info-text {
+            text-align: center;
+            color: #aaa;
             font-size: 12px;
-            color: #ffaa00;
+            margin-top: 20px;
         }
-
-        .perf-card {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 10px;
-        }
-
-        .perf-metric {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #444;
-        }
-
-        .perf-value.good {
+        
+        .info-text a {
             color: #00ff00;
-        }
-
-        .perf-value.warning {
-            color: #ffaa00;
-        }
-
-        .perf-value.bad {
-            color: #ff4d4d;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            th,
-            td {
-                padding: 8px;
-                font-size: 12px;
-            }
+            text-decoration: none;
         }
     </style>
 </head>
-
 <body>
-    <div class="container">
-        <div class="status-header">
-            <h1>🚀 Pioneer Admin Dashboard</h1>
-            <div class="connection-status" id="connection-status">
-                <span class="connection-dot disconnected"></span>
-                <span id="status-text">Menghubungkan...</span>
-            </div>
+    <div class="login-container">
+        <h1>
+            🚀 Pioneer Admin<br>
+            <small>Dashboard Login</small>
+        </h1>
+        
+        <div id="errorMsg" class="error-message" style="display: none;"></div>
+        
+        <div class="input-group">
+            <label>👤 Username</label>
+            <input type="text" id="username" placeholder="Masukkan username admin" autocomplete="off">
         </div>
-
-        <!-- Server Info -->
-        <div class="card" style="background:#2d2d2d; padding:12px;">
-            <div class="flex-row" style="justify-content: space-between;">
-                <span>🔌 Backend Server:</span>
-                <span class="server-url" id="server-url">Loading...</span>
-            </div>
+        
+        <div class="input-group">
+            <label>🔒 Password</label>
+            <input type="password" id="password" placeholder="Masukkan password" onkeypress="if(event.key==='Enter') login()">
         </div>
-
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="total-users">0</div>
-                <div class="stat-label">Total Users</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="student-count">0</div>
-                <div class="stat-label">Siswa Online</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="teacher-status">-</div>
-                <div class="stat-label">Guru</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="max-capacity">10</div>
-                <div class="stat-label">Kapasitas Maks</div>
-            </div>
-        </div>
-
-        <!-- Broadcast Card -->
-        <div class="card">
-            <h3>📢 Broadcast Pengumuman</h3>
-            <input type="text" id="broadcastMsg" placeholder="Ketik pesan untuk semua murid..."
-                onkeypress="if(event.key==='Enter') sendBroadcast()">
-            <button class="btn-broadcast" onclick="sendBroadcast()">📢 KIRIM KE SEMUA LAYAR</button>
-            <div id="broadcastResult" class="test-result" style="display:none;"></div>
-        </div>
-
-        <!-- Slide Upload -->
-        <div class="card">
-            <h3>📸 Upload Slide Presentasi</h3>
-            <div class="flex-row">
-                <input type="file" id="slideUpload" accept="image/*">
-                <button onclick="uploadSlide()" style="background:#00ff00;color:#000;padding:12px 24px;">Upload &
-                    Broadcast</button>
-            </div>
-            <div id="slidePreview" style="margin-top:10px;"></div>
-        </div>
-
-        <!-- Performance Monitor -->
-        <div class="card">
-            <h3>📡 Network Performance (Throttle Monitor)</h3>
-            <div class="perf-card">
-                <div class="perf-metric">
-                    <span>📤 Packets/sec:</span>
-                    <span id="packets-per-sec" class="perf-value">0</span>
-                </div>
-                <div class="perf-metric">
-                    <span>💾 Bandwidth:</span>
-                    <span id="bandwidth-usage" class="perf-value">0</span>
-                    <span>kbps</span>
-                </div>
-                <div class="perf-metric">
-                    <span>🎯 Without Throttle:</span>
-                    <span>60 pkt/s</span>
-                </div>
-                <div class="perf-metric">
-                    <span>✅ With Throttle:</span>
-                    <span id="actual-with" class="perf-value">0</span>
-                    <span>pkt/s</span>
-                </div>
-                <div class="perf-metric">
-                    <span>📉 Reduction:</span>
-                    <span id="reduction" class="perf-value">0%</span>
-                </div>
-                <div class="flex-row" style="margin-top:10px;">
-                    <button onclick="startThrottleTest()" style="background:#ffaa00;color:#000;">▶ Test Throttle
-                        (10s)</button>
-                    <button onclick="resetMetrics()" style="background:#3d3d3d;">🔄 Reset Metrics</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Users Table -->
-        <div class="card">
-            <h3>👥 Siswa Online (<span id="count">0</span>/10)</h3>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nama</th>
-                            <th>UID</th>
-                            <th>Role</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="user-table">
-                        <tr>
-                            <td colspan="4" style="text-align:center;">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <button class="btn-refresh" onclick="refreshUsers()" style="margin-top:10px;">🔄 Refresh</button>
-            </div>
-        </div>
-
-        <!-- Activity Log -->
-        <div class="card">
-            <h3>📋 Activity Log</h3>
-            <div class="log-panel" id="log-panel">
-                <div class="log-entry info">✨ Dashboard siap digunakan</div>
-            </div>
-            <button onclick="clearLogs()" style="margin-top:10px;background:#3d3d3d;">Clear Logs</button>
+        
+        <button onclick="login()">🔐 LOGIN</button>
+        
+        <div class="info-text">
+            <strong>Akun Demo:</strong><br>
+            admin1 / 123456<br>
+            admin2 / 000000<br>
+            admin3 / 999999
         </div>
     </div>
 
     <script>
-        // ============================================
-        // KONFIGURASI - GANTI DENGAN URL BACKEND ANDA
-        // ============================================
         const BACKEND_URL = "https://f75d9c6d-8a1f-441c-84e8-4c3c3764296a-00-2d0b4ng7svqyl.sisko.replit.dev";
-
-        console.log('🌐 Backend URL:', BACKEND_URL);
-        document.getElementById('server-url').innerText = BACKEND_URL;
-
-        let socket = null;
-
-        // ============================================
-        // PERFORMANCE METRICS
-        // ============================================
-        let metrics = { packetsPerSecond: [], bandwidth: [] };
-        let packetCount = 0;
-        let byteCount = 0;
-        let lastSecond = Date.now();
-        let isTesting = false;
-
-        function updateMetricsDisplay() {
-            const avgPackets = metrics.packetsPerSecond.length > 0 ?
-                metrics.packetsPerSecond.slice(-10).reduce((a, b) => a + b, 0) / Math.min(10, metrics.packetsPerSecond.length) : 0;
-            const avgBandwidth = metrics.bandwidth.length > 0 ?
-                metrics.bandwidth.slice(-10).reduce((a, b) => a + b, 0) / Math.min(10, metrics.bandwidth.length) : 0;
-
-            document.getElementById('packets-per-sec').innerText = avgPackets.toFixed(1);
-            document.getElementById('bandwidth-usage').innerText = avgBandwidth.toFixed(1);
-
-            let colorClass = avgPackets <= 25 ? 'good' : (avgPackets <= 40 ? 'warning' : 'bad');
-            document.getElementById('actual-with').innerHTML = `<span class="perf-value ${colorClass}">${avgPackets.toFixed(1)}</span>`;
-
-            const reduction = ((60 - avgPackets) / 60 * 100).toFixed(1);
-            let redColor = reduction >= 60 ? 'good' : (reduction >= 30 ? 'warning' : 'bad');
-            document.getElementById('reduction').innerHTML = `<span class="perf-value ${redColor}">${reduction}%</span>`;
-        }
-
-        function trackOutgoingPacket(dataSize) {
-            packetCount++;
-            byteCount += dataSize;
-            const now = Date.now();
-            if (now - lastSecond >= 1000) {
-                metrics.packetsPerSecond.push(packetCount);
-                metrics.bandwidth.push((byteCount * 8) / 1000);
-                packetCount = 0;
-                byteCount = 0;
-                lastSecond = now;
-                updateMetricsDisplay();
-                if (metrics.packetsPerSecond.length > 60) {
-                    metrics.packetsPerSecond.shift();
-                    metrics.bandwidth.shift();
-                }
-            }
-        }
-
-        function startThrottleTest() {
-            if (isTesting) { addLog('Test sedang berjalan...', 'warning'); return; }
-            isTesting = true;
-            addLog('🚀 Test throttle 10 detik...', 'info');
-            let testPackets = 0;
-            const testInterval = setInterval(() => {
-                if (!isTesting) { clearInterval(testInterval); return; }
-                const testData = { test: true, x: Math.random() * 10, z: Math.random() * 10, ts: Date.now() };
-                trackOutgoingPacket(JSON.stringify(testData).length);
-                testPackets++;
-                if (socket && socket.connected) socket.emit('admin_test_packet', testData);
-            }, 50);
-            setTimeout(() => {
-                clearInterval(testInterval);
-                isTesting = false;
-                const avgRate = (testPackets / 10).toFixed(1);
-                addLog(`✅ Test selesai! ${avgRate} pkt/s (target optimal: <25 pkt/s)`, avgRate <= 25 ? 'info' : 'warning');
-            }, 10000);
-        }
-
-        function resetMetrics() {
-            metrics = { packetsPerSecond: [], bandwidth: [] };
-            packetCount = 0;
-            byteCount = 0;
-            updateMetricsDisplay();
-            addLog('🔄 Metrics direset', 'info');
-        }
-
-        // ============================================
-        // FUNGSI UTAMA
-        // ============================================
-
-        function initSocket() {
-            addLog('🔌 Mencoba konek ke: ' + BACKEND_URL, 'info');
-
-            socket = io(BACKEND_URL, {
-                transports: ['websocket', 'polling'],
-                withCredentials: true,
-                reconnection: true,
-                reconnectionAttempts: 10,
-                reconnectionDelay: 1000,
-                timeout: 20000
-            });
-
-            // Intercept untuk tracking
-            const originalEmit = socket.emit;
-            socket.emit = function (...args) {
-                trackOutgoingPacket(JSON.stringify(args).length);
-                console.log('📤 EMIT:', args[0], args[1]);
-                return originalEmit.apply(this, args);
-            };
-
-            socket.on('connect', () => {
-                console.log('✅ Socket connected to:', BACKEND_URL);
-                const statusDiv = document.getElementById('connection-status');
-                statusDiv.querySelector('.connection-dot').className = 'connection-dot connected';
-                document.getElementById('status-text').innerText = 'Terhubung';
-                addLog('✅ Terhubung ke server backend!', 'info');
-                refreshUsers();
-                // Minta stats awal
-                socket.emit('admin_request_stats');
-            });
-
-            socket.on('disconnect', () => {
-                console.log('❌ Socket disconnected');
-                const statusDiv = document.getElementById('connection-status');
-                statusDiv.querySelector('.connection-dot').className = 'connection-dot disconnected';
-                document.getElementById('status-text').innerText = 'Terputus';
-                addLog('❌ Terputus dari server', 'error');
-            });
-
-            socket.on('connect_error', (err) => {
-                console.error('Socket error:', err.message);
-                addLog(`❌ Koneksi error: ${err.message}`, 'error');
-                const statusDiv = document.getElementById('connection-status');
-                statusDiv.querySelector('.connection-dot').className = 'connection-dot disconnected';
-                document.getElementById('status-text').innerText = 'Error';
-            });
-
-            // ========== EVENT DARI SERVER ==========
-            socket.on('capacityUpdate', (data) => {
-                console.log('📊 Capacity update:', data);
-                document.getElementById('student-count').innerText = data.current;
-                document.getElementById('max-capacity').innerText = data.max;
-                document.getElementById('count').innerText = data.current;
-                addLog(`📊 Kapasitas: ${data.current}/${data.max} siswa`, 'info');
-            });
-
-            // BROADCAST MASUK - TEST INI
-            socket.on('announcement', (message) => {
-                console.log('📢 ANNOUNCEMENT RECEIVED:', message);
-                addLog(`📢 PENGUMUMAN DARI GURU: "${message}"`, 'info');
-
-                // Tampilkan notifikasi
-                const resultDiv = document.getElementById('broadcastResult');
-                resultDiv.style.display = 'block';
-                resultDiv.className = 'test-result success';
-                resultDiv.innerHTML = `✅ Broadcast terkirim: "${message}"`;
-                setTimeout(() => {
-                    resultDiv.style.display = 'none';
-                }, 3000);
-
-                // Alert popup
-                alert(`📢 Pengumuman dari Guru:\n\n${message}`);
-            });
-
-            // KICK SUCCESS
-            socket.on('kick_success', (data) => {
-                console.log('✅ Kick success:', data);
-                addLog(`✅ Berhasil mengeluarkan ${data.name} (${data.uid})`, 'info');
-                refreshUsers();
-            });
-
-            socket.on('kick_error', (data) => {
-                console.log('❌ Kick error:', data);
-                addLog(`❌ Gagal mengeluarkan user: ${data.message}`, 'error');
-            });
-
-            socket.on('user_kicked', (uid) => {
-                addLog(`👢 User ${uid} telah dikeluarkan`, 'warning');
-                refreshUsers();
-            });
-
-            socket.on('error_message', (data) => {
-                console.log('⚠️ Error message:', data);
-                addLog(`⚠️ ${data.title}: ${data.message}`, 'error');
-                alert(`${data.title}\n\n${data.message}`);
-            });
-
-            // Slide update
-            socket.on('update-whiteboard-slide', (data) => {
-                console.log('📸 Slide update:', data);
-                addLog(`📸 Slide diperbarui: ${data.slideUrl}`, 'info');
-            });
-        }
-
-        // REFRESH USERS
-        async function refreshUsers() {
-            try {
-                addLog('🔄 Refreshing user list...', 'info');
-                const response = await fetch(`${BACKEND_URL}/api/admin/users`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const users = await response.json();
-                console.log('👥 Users from API:', users);
-
-                const tableBody = document.getElementById('user-table');
-                const students = users.filter(u => u.role !== 'teacher');
-                const teacherExists = users.some(u => u.role === 'teacher');
-
-                document.getElementById('total-users').innerText = users.length;
-                document.getElementById('student-count').innerText = students.length;
-                document.getElementById('count').innerText = students.length;
-                document.getElementById('teacher-status').innerHTML = teacherExists ? '👨‍🏫 Ada' : '❌ Tidak ada';
-
-                if (users.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada user online</td></tr>';
-                    return;
-                }
-
-                tableBody.innerHTML = users.map(user => `
-                    <tr>
-                        <td><strong>${escapeHtml(user.displayName || 'Unknown')}</strong></td>
-                        <td><code>${user.uid ? user.uid.substring(0, 8) : '---'}...</code></td>
-                        <td><span class="status-badge ${user.role === 'teacher' ? 'status-teacher' : 'status-online'}">${user.role || 'student'}</span></td>
-                        <td>${user.role !== 'teacher' ? `<button class="btn-kick" onclick="kickUser('${user.uid}')">🚫 KICK</button>` : '<span style="color:#ffaa00;">Guru</span>'}</td>
-                    </tr>
-                `).join('');
-
-                addLog(`✅ Refresh: ${users.length} user (${students.length} siswa)`, 'info');
-            } catch (err) {
-                console.error('Refresh error:', err);
-                addLog(`❌ Gagal refresh: ${err.message}`, 'error');
-            }
-        }
-
-        function kickUser(uid) {
-            if (confirm('Yakin mau menendang user ini?')) {
-                console.log('👢 Kicking user:', uid);
-                socket.emit('admin_kick_user', uid);
-                addLog(`👢 Mengirim perintah kick untuk ${uid}`, 'warning');
-            }
-        }
-
-        function sendBroadcast() {
-            const msg = document.getElementById('broadcastMsg').value.trim();
-            if (!msg) {
-                alert('Pesan tidak boleh kosong!');
+        
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showError('Username dan password harus diisi!');
                 return;
             }
-
-            console.log('📢 Sending broadcast to server:', msg);
-            socket.emit('admin_broadcast', msg);
-            addLog(`📢 Broadcast dikirim ke server: "${msg}"`, 'info');
-
-            // Tampilkan loading
-            const resultDiv = document.getElementById('broadcastResult');
-            resultDiv.style.display = 'block';
-            resultDiv.className = 'test-result';
-            resultDiv.innerHTML = '⏳ Mengirim broadcast...';
-
-            setTimeout(() => {
-                resultDiv.innerHTML = '✅ Broadcast terkirim ke server';
-                setTimeout(() => {
-                    resultDiv.style.display = 'none';
-                }, 2000);
-            }, 500);
-
-            document.getElementById('broadcastMsg').value = '';
-        }
-
-        async function uploadSlide() {
-            const fileInput = document.getElementById('slideUpload');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Pilih file slide terlebih dahulu!');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('slide', file);
-            addLog(`📤 Upload slide: ${file.name}`, 'info');
-
+            
             try {
-                const response = await fetch(`${BACKEND_URL}/upload-material`, {
+                const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
                 });
+                
                 const result = await response.json();
-
+                
                 if (result.success) {
-                    addLog(`✅ Slide berhasil: ${result.url}`, 'info');
-                    socket.emit('admin-change-slide', { slideUrl: result.url });
-                    document.getElementById('slidePreview').innerHTML = `<img src="${result.url}" style="max-width:200px; max-height:150px; border-radius:8px; margin-top:10px;">`;
-                    alert('✅ Slide terkirim ke semua murid!');
-                    fileInput.value = '';
+                    // Simpan token dan info admin
+                    localStorage.setItem('admin_token', result.token);
+                    localStorage.setItem('admin_info', JSON.stringify(result.admin));
+                    
+                    // Redirect ke dashboard
+                    window.location.href = 'admin-dashboard.html';
                 } else {
-                    throw new Error(result.message || 'Upload gagal');
+                    showError(result.message || 'Login gagal!');
                 }
             } catch (err) {
-                addLog(`❌ Upload gagal: ${err.message}`, 'error');
-                alert('Upload gagal: ' + err.message);
+                console.error('Login error:', err);
+                showError('Gagal terhubung ke server!');
             }
         }
-
-        function addLog(message, type = 'info') {
-            const logPanel = document.getElementById('log-panel');
-            const timestamp = new Date().toLocaleTimeString();
-            const icon = type === 'info' ? 'ℹ️' : (type === 'warning' ? '⚠️' : '❌');
-            logPanel.innerHTML += `<div class="log-entry ${type}">[${timestamp}] ${icon} ${escapeHtml(message)}</div>`;
-            logPanel.scrollTop = logPanel.scrollHeight;
-            if (logPanel.children.length > 100) logPanel.removeChild(logPanel.children[0]);
+        
+        function showError(msg) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
         }
-
-        function clearLogs() {
-            document.getElementById('log-panel').innerHTML = '<div class="log-entry info">✨ Log dibersihkan</div>';
+        
+        // Cek apakah sudah login
+        const token = localStorage.getItem('admin_token');
+        if (token) {
+            // Coba redirect ke dashboard
+            window.location.href = 'admin-dashboard.html';
         }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // ============================================
-        // START
-        // ============================================
-        initSocket();
-
-        // Auto-refresh setiap 3 detik
-        setInterval(() => {
-            if (socket && socket.connected) {
-                refreshUsers();
-            }
-        }, 3000);
-
-        // Global functions
-        window.refreshUsers = refreshUsers;
-        window.kickUser = kickUser;
-        window.sendBroadcast = sendBroadcast;
-        window.uploadSlide = uploadSlide;
-        window.clearLogs = clearLogs;
-        window.startThrottleTest = startThrottleTest;
-        window.resetMetrics = resetMetrics;
     </script>
 </body>
-
 </html>

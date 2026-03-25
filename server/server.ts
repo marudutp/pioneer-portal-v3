@@ -18,6 +18,27 @@ const app = express();
 // Konfigurasi Admin
 const ADMIN_UID = "PjSNNdrP0DP0PddcE7wElgSkppE3";
 
+// server.ts - Tambahkan di bagian atas
+const ADMIN_CREDENTIALS = {
+    "admin1": {
+        "password": "123456",
+        "displayName": "Admin Utama",
+        "uid": "admin_001"
+    },
+    "admin2": {
+        "password": "000000",
+        "displayName": "Admin Sekunder",
+        "uid": "admin_002"
+    },
+    "admin3": {
+        "password": "999999",
+        "displayName": "Admin Tersier",
+        "uid": "admin_003"
+    }
+};
+
+// Atau baca dari file
+// import adminData from './admin.json' assert { type: 'json' };
 // Setup upload directory
 const uploadDir = path.join(__dirname, 'public/presentations');
 if (!fs.existsSync(uploadDir)) {
@@ -94,6 +115,71 @@ app.get('/', (req, res) => {
 
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// server.ts - Tambahkan endpoint auth untuk admin
+
+// Middleware untuk parse JSON
+app.use(express.json());
+
+// Endpoint login admin
+app.post('/api/admin/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    console.log(`🔐 Admin login attempt: ${username}`);
+    
+    // Cek credentials
+    const admin = ADMIN_CREDENTIALS[username as keyof typeof ADMIN_CREDENTIALS];
+    
+    if (admin && admin.password === password) {
+        // Generate token sederhana (bisa paket JWT nanti)
+        const token = Buffer.from(`${username}:${Date.now()}`).toString('base64');
+        
+        res.json({
+            success: true,
+            token: token,
+            admin: {
+                username: username,
+                displayName: admin.displayName,
+                uid: admin.uid
+            }
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            message: 'Username atau password salah!'
+        });
+    }
+});
+
+// Middleware verifikasi token (opsional)
+function verifyAdminToken(req: any, res: any, next: any) {
+    const token = req.headers['x-admin-token'];
+    
+    if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    // Verifikasi token sederhana
+    try {
+        const decoded = Buffer.from(token, 'base64').toString();
+        const [username, timestamp] = decoded.split(':');
+        
+        if (ADMIN_CREDENTIALS[username as keyof typeof ADMIN_CREDENTIALS]) {
+            req.adminUser = username;
+            next();
+        } else {
+            res.status(401).json({ error: 'Invalid token' });
+        }
+    } catch (err) {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+}
+
+// Proteksi endpoint admin dengan token
+app.get('/api/admin/users', verifyAdminToken, (req, res) => {
+    const users = Array.from(activeUsers.values());
+    res.json(users);
 });
 
 app.post('/upload-material', upload.single('slide'), (req, res) => {

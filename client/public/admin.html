@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -115,6 +115,983 @@
 
         // Auto-refresh setiap 5 detik
         setInterval(refreshUsers, 5000);
+    </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pioneer Admin Dashboard v2.0 - With Performance Monitor</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .card {
+            background: rgba(45, 45, 45, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(68, 68, 68, 0.5);
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        
+        .card h3 {
+            margin-bottom: 15px;
+            color: #00ff00;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 3px solid #00ff00;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ff00;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        
+        .perf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .perf-card {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .perf-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 8px 0;
+            border-bottom: 1px solid #444;
+        }
+        
+        .perf-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .perf-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .perf-value.good { color: #00ff00; }
+        .perf-value.warning { color: #ffaa00; }
+        .perf-value.bad { color: #ff4d4d; }
+        
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        
+        th {
+            background: #3d3d3d;
+            color: #00ff00;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: rgba(0,255,0,0.05);
+            transition: background 0.2s;
+        }
+        
+        button {
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-kick {
+            background: linear-gradient(135deg, #ff4d4d, #cc0000);
+            color: white;
+        }
+        
+        .btn-broadcast {
+            background: linear-gradient(135deg, #00ff00, #00cc00);
+            color: #000;
+            font-weight: bold;
+            padding: 12px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-refresh {
+            background: #3d3d3d;
+            color: white;
+            padding: 8px 16px;
+        }
+        
+        .btn-test {
+            background: #ffaa00;
+            color: #000;
+            padding: 8px 16px;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            background: #3d3d3d;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #00ff00;
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .status-online {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        .status-teacher {
+            background: #ffaa00;
+            color: #000;
+        }
+        
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.5);
+        }
+        
+        .connection-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .connection-dot.connected {
+            background: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        
+        .connection-dot.disconnected {
+            background: #ff4d4d;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .log-panel {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        
+        .log-entry {
+            padding: 4px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .log-entry.info { color: #0f0; }
+        .log-entry.warning { color: #ffaa00; }
+        .log-entry.error { color: #ff4d4d; }
+        
+        .flex-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .slide-preview {
+            max-width: 200px;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .perf-grid { grid-template-columns: 1fr; }
+            table { font-size: 12px; }
+            th, td { padding: 8px; }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00cc00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status-header">
+            <h1>
+                🚀 Pioneer Admin Dashboard v2.0
+                <span class="connection-status" id="connection-status">
+                    <span class="connection-dot disconnected"></span>
+                    <span id="status-text">Menghubungkan...</span>
+                </span>
+            </h1>
+            <div class="flex-row">
+                <button class="btn-refresh" onclick="refreshUsers()">🔄 Refresh Data</button>
+                <button class="btn-test" onclick="startThrottleTest()">📊 Test Throttle</button>
+                <button class="btn-refresh" onclick="resetMetrics()">🔄 Reset Metrics</button>
+            </div>
+        </div>
+        
+        <!-- Statistics Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-users">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="student-count">0</div>
+                <div class="stat-label">Siswa Online</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="teacher-status">-</div>
+                <div class="stat-label">Guru</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="max-capacity">10</div>
+                <div class="stat-label">Kapasitas Maksimal</div>
+            </div>
+        </div>
+        
+        <!-- NETWORK PERFORMANCE MONITOR SECTION -->
+        <div class="card">
+            <h3>📡 Network Performance Monitor (Throttle Analysis)</h3>
+            <div class="perf-grid">
+                <div class="perf-card">
+                    <h4 style="margin-bottom: 10px;">📊 Real-time Metrics</h4>
+                    <div class="perf-metric">
+                        <span class="perf-label">Packets/sec (Outgoing):</span>
+                        <span class="perf-value" id="packets-per-sec">0</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Bandwidth Usage:</span>
+                        <span class="perf-value" id="bandwidth-usage">0</span>
+                        <span>kbps</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Avg Latency:</span>
+                        <span class="perf-value" id="avg-latency">0</span>
+                        <span>ms</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Server Messages/sec:</span>
+                        <span class="perf-value" id="server-msgs">0</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Throttle Status:</span>
+                        <span class="perf-value" id="throttle-status">⏳ Measuring...</span>
+                    </div>
+                </div>
+                <div class="perf-card">
+                    <h4 style="margin-bottom: 10px;">📈 Throttle Effectiveness</h4>
+                    <div class="perf-metric">
+                        <span class="perf-label">Without Throttle (est.):</span>
+                        <span class="perf-value warning" id="est-without">60</span>
+                        <span>pkt/s</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">With Throttle (actual):</span>
+                        <span class="perf-value" id="actual-with">0</span>
+                        <span>pkt/s</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Reduction:</span>
+                        <span class="perf-value" id="reduction">0</span>
+                        <span>%</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Efficiency:</span>
+                        <span class="perf-value" id="efficiency">-</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="packetChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Broadcast Card -->
+        <div class="card">
+            <h3>📢 Broadcast Pengumuman</h3>
+            <input type="text" id="broadcastMsg" placeholder="Ketik pesan untuk semua murid..." onkeypress="handleEnter(event)">
+            <button class="btn-broadcast" onclick="sendBroadcast()">
+                📢 KIRIM KE SEMUA LAYAR
+            </button>
+        </div>
+        
+        <!-- Slide Management Card -->
+        <div class="card">
+            <h3>📸 Manajemen Slide Presentasi</h3>
+            <div class="flex-row" style="margin-bottom: 10px;">
+                <input type="file" id="slideUpload" accept="image/*" style="flex: 1;">
+                <button onclick="uploadSlide()" style="background: #00ff00; color: #000; padding: 12px 24px;">Upload Slide</button>
+            </div>
+            <div id="slidePreview" style="margin-top: 10px;"></div>
+        </div>
+        
+        <!-- Users Table Card -->
+        <div class="card">
+            <h3>👥 Manajemen Pengguna</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Nama</th>
+                            <th>UID</th>
+                            <th>Role</th>
+                            <th>Posisi</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table">
+                        <tr>
+                            <td colspan="6" style="text-align: center;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Activity Log Card -->
+        <div class="card">
+            <h3>📋 Activity Log</h3>
+            <div class="log-panel" id="log-panel">
+                <div class="log-entry info">✨ Dashboard siap digunakan</div>
+            </div>
+            <button onclick="clearLogs()" style="margin-top: 10px; background: #3d3d3d; color: white;">Clear Logs</button>
+        </div>
+    </div>
+
+    <script>
+        // Konfigurasi
+        const REPLIT_URL = window.location.origin || "https://f75d9c6d-8a1f-441c-84e8-4c3c3764296a-00-2d0b4ng7svqyl.sisko.replit.dev";
+        let socket = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+        
+        // Performance Metrics
+        let metrics = {
+            packetsPerSecond: [],
+            bandwidth: [],
+            latency: [],
+            serverMessages: [],
+            timestamps: []
+        };
+        
+        let packetCount = 0;
+        let byteCount = 0;
+        let lastSecond = Date.now();
+        let isTesting = false;
+        let packetChart = null;
+        
+        // Inisialisasi Chart
+        function initChart() {
+            const ctx = document.getElementById('packetChart').getContext('2d');
+            packetChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Packets/sec',
+                        data: [],
+                        borderColor: '#00ff00',
+                        backgroundColor: 'rgba(0,255,0,0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Target (20 pkt/s)',
+                        data: [],
+                        borderColor: '#ffaa00',
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Packets per Second', color: '#fff' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Time (seconds)', color: '#fff' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update metrics display
+        function updateMetricsDisplay() {
+            const avgPackets = metrics.packetsPerSecond.length > 0 ? 
+                metrics.packetsPerSecond.slice(-10).reduce((a,b) => a+b, 0) / Math.min(10, metrics.packetsPerSecond.length) : 0;
+            const avgBandwidth = metrics.bandwidth.length > 0 ?
+                metrics.bandwidth.slice(-10).reduce((a,b) => a+b, 0) / Math.min(10, metrics.bandwidth.length) : 0;
+            const avgLatency = metrics.latency.length > 0 ?
+                metrics.latency.slice(-10).reduce((a,b) => a+b, 0) / Math.min(10, metrics.latency.length) : 0;
+            
+            document.getElementById('packets-per-sec').innerText = avgPackets.toFixed(1);
+            document.getElementById('bandwidth-usage').innerText = avgBandwidth.toFixed(1);
+            document.getElementById('avg-latency').innerText = avgLatency.toFixed(1);
+            
+            // Throttle effectiveness
+            const withoutThrottle = 60;
+            const reduction = ((withoutThrottle - avgPackets) / withoutThrottle * 100).toFixed(1);
+            document.getElementById('actual-with').innerHTML = `<span class="${avgPackets <= 25 ? 'good' : (avgPackets <= 40 ? 'warning' : 'bad')}">${avgPackets.toFixed(1)}</span>`;
+            document.getElementById('reduction').innerHTML = `<span class="${reduction >= 60 ? 'good' : (reduction >= 30 ? 'warning' : 'bad')}">${reduction}%</span>`;
+            
+            let throttleStatus = '';
+            let efficiency = '';
+            if (avgPackets <= 25) {
+                throttleStatus = '✅ Optimal';
+                efficiency = 'Excellent (70-80% reduction)';
+            } else if (avgPackets <= 40) {
+                throttleStatus = '⚠️ Moderate';
+                efficiency = 'Good (40-60% reduction)';
+            } else {
+                throttleStatus = '❌ Ineffective';
+                efficiency = 'Poor (<40% reduction)';
+            }
+            document.getElementById('throttle-status').innerHTML = throttleStatus;
+            document.getElementById('efficiency').innerHTML = efficiency;
+            
+            // Update chart
+            if (packetChart && metrics.packetsPerSecond.length > 0) {
+                const labels = metrics.packetsPerSecond.slice(-20).map((_, i) => i);
+                const targetLine = Array(metrics.packetsPerSecond.slice(-20).length).fill(20);
+                packetChart.data.labels = labels;
+                packetChart.data.datasets[0].data = metrics.packetsPerSecond.slice(-20);
+                packetChart.data.datasets[1].data = targetLine;
+                packetChart.update();
+            }
+        }
+        
+        // Track outgoing packet
+        function trackOutgoingPacket(dataSize) {
+            packetCount++;
+            byteCount += dataSize;
+            
+            const now = Date.now();
+            if (now - lastSecond >= 1000) {
+                metrics.packetsPerSecond.push(packetCount);
+                const kbps = (byteCount * 8) / 1000;
+                metrics.bandwidth.push(kbps);
+                
+                addLog(`📊 Packets/sec: ${packetCount} | Bandwidth: ${kbps.toFixed(1)} kbps`, 'info');
+                
+                packetCount = 0;
+                byteCount = 0;
+                lastSecond = now;
+                updateMetricsDisplay();
+                
+                // Limit metrics storage
+                if (metrics.packetsPerSecond.length > 60) {
+                    metrics.packetsPerSecond.shift();
+                    metrics.bandwidth.shift();
+                }
+            }
+        }
+        
+        // Test throttle dengan simulasi gerakan
+        function startThrottleTest() {
+            if (isTesting) {
+                addLog('⚠️ Test sedang berjalan...', 'warning');
+                return;
+            }
+            
+            isTesting = true;
+            addLog('🚀 Memulai throttle test selama 10 detik...', 'info');
+            
+            let testPackets = 0;
+            const testInterval = setInterval(() => {
+                if (!isTesting) {
+                    clearInterval(testInterval);
+                    return;
+                }
+                
+                // Simulasi kirim packet movement
+                const testData = {
+                    type: 'throttle_test',
+                    position: { x: Math.random() * 10, y: 0, z: Math.random() * 10 },
+                    rotation: { y: Math.random() * Math.PI * 2 },
+                    timestamp: Date.now()
+                };
+                
+                const dataSize = JSON.stringify(testData).length;
+                trackOutgoingPacket(dataSize);
+                testPackets++;
+                
+                if (socket && socket.connected) {
+                    socket.emit('admin_test_packet', testData);
+                }
+            }, 50); // 50ms = 20 packet/sec ideal
+            
+            setTimeout(() => {
+                clearInterval(testInterval);
+                isTesting = false;
+                addLog(`✅ Test selesai! Total packets: ${testPackets} | Avg: ${(testPackets/10).toFixed(1)} pkt/s`, 'info');
+                
+                if (testPackets <= 250) { // 20-25 pkt/s selama 10 detik
+                    addLog('✅ Throttle WORKING! Packet rate terkendali dengan baik.', 'info');
+                } else {
+                    addLog('⚠️ Throttle mungkin tidak aktif. Packet rate terlalu tinggi!', 'warning');
+                }
+            }, 10000);
+        }
+        
+        function resetMetrics() {
+            metrics = {
+                packetsPerSecond: [],
+                bandwidth: [],
+                latency: [],
+                serverMessages: [],
+                timestamps: []
+            };
+            packetCount = 0;
+            byteCount = 0;
+            updateMetricsDisplay();
+            addLog('🔄 Metrics telah direset', 'info');
+        }
+        
+        // Inisialisasi Socket
+        function initSocket() {
+            socket = io(REPLIT_URL, {
+                transports: ['polling', 'websocket'],
+                withCredentials: true,
+                reconnection: true,
+                reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
+                reconnectionDelay: 1000,
+                timeout: 10000
+            });
+            
+            // Intercept socket.emit untuk tracking
+            const originalEmit = socket.emit;
+            socket.emit = function(...args) {
+                const dataSize = JSON.stringify(args).length;
+                trackOutgoingPacket(dataSize);
+                
+                // Track latency untuk event tertentu
+                if (args[0] === 'admin_broadcast' || args[0] === 'admin_kick_user') {
+                    const startTime = Date.now();
+                    const result = originalEmit.apply(this, args);
+                    const latency = Date.now() - startTime;
+                    metrics.latency.push(latency);
+                    if (metrics.latency.length > 100) metrics.latency.shift();
+                    return result;
+                }
+                
+                return originalEmit.apply(this, args);
+            };
+            
+            socket.on('connect', () => {
+                addLog('✅ Terhubung ke server', 'info');
+                updateConnectionStatus(true);
+                reconnectAttempts = 0;
+                refreshUsers();
+                socket.emit('admin_request_stats');
+            });
+            
+            socket.on('connect_error', (err) => {
+                addLog(`❌ Gagal konek: ${err.message}`, 'error');
+                updateConnectionStatus(false);
+                reconnectAttempts++;
+                
+                if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                    addLog('⚠️ Mencoba reconnect ulang dalam 10 detik...', 'warning');
+                    setTimeout(() => {
+                        reconnectAttempts = 0;
+                        socket.connect();
+                    }, 10000);
+                }
+            });
+            
+            socket.on('disconnect', () => {
+                addLog('🔌 Terputus dari server', 'warning');
+                updateConnectionStatus(false);
+            });
+            
+            // Track server messages
+            socket.onAny((event, ...args) => {
+                if (event !== 'capacityUpdate' && event !== 'announcement') {
+                    const serverMsgCount = metrics.serverMessages.length + 1;
+                    metrics.serverMessages.push(serverMsgCount);
+                    if (metrics.serverMessages.length > 100) metrics.serverMessages.shift();
+                    document.getElementById('server-msgs').innerText = metrics.serverMessages.length;
+                }
+            });
+            
+            socket.on('capacityUpdate', (data) => {
+                document.getElementById('student-count').innerText = data.current;
+                document.getElementById('max-capacity').innerText = data.max;
+                addLog(`📊 Kapasitas: ${data.current}/${data.max} siswa`, 'info');
+            });
+            
+            socket.on('announcement', (message) => {
+                addLog(`📢 Broadcast terkirim: "${message}"`, 'info');
+            });
+            
+            socket.on('user_kicked', (uid) => {
+                addLog(`👢 User ${uid} telah dikeluarkan`, 'warning');
+                refreshUsers();
+            });
+            
+            socket.on('error_message', (data) => {
+                addLog(`⚠️ Error: ${data.message}`, 'error');
+            });
+        }
+        
+        function updateConnectionStatus(isConnected) {
+            const statusDiv = document.getElementById('connection-status');
+            const dot = statusDiv.querySelector('.connection-dot');
+            const text = document.getElementById('status-text');
+            
+            if (isConnected) {
+                dot.className = 'connection-dot connected';
+                text.innerText = 'Terhubung';
+                statusDiv.style.borderColor = '#00ff00';
+            } else {
+                dot.className = 'connection-dot disconnected';
+                text.innerText = 'Terputus';
+                statusDiv.style.borderColor = '#ff4d4d';
+            }
+        }
+        
+        async function refreshUsers() {
+            try {
+                const response = await fetch(`${REPLIT_URL}/api/admin/users`);
+                const users = await response.json();
+                
+                const tableBody = document.getElementById('user-table');
+                const studentCount = users.filter(u => u.role !== 'teacher').length;
+                const teacherExists = users.some(u => u.role === 'teacher');
+                
+                document.getElementById('total-users').innerText = users.length;
+                document.getElementById('student-count').innerText = studentCount;
+                document.getElementById('teacher-status').innerHTML = teacherExists ? 
+                    '<span style="color: #ffaa00;">👨‍🏫 Online</span>' : 
+                    '<span style="color: #666;">👤 Tidak ada</span>';
+                
+                if (users.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada user online</td></tr>';
+                    return;
+                }
+                
+                tableBody.innerHTML = users.map(user => `
+                    <tr>
+                        <td>
+                            <span class="status-badge ${user.role === 'teacher' ? 'status-teacher' : 'status-online'}">
+                                ${user.role === 'teacher' ? '👨‍🏫' : '🟢'}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>${escapeHtml(user.displayName)}</strong>
+                            ${user.role === 'teacher' ? '<br><small style="color:#ffaa00;">GURU</small>' : ''}
+                        </td>
+                        <td><code>${user.uid ? user.uid.substring(0, 8) : '---'}...</code></td>
+                        <td>
+                            <span class="status-badge ${user.role === 'teacher' ? 'status-teacher' : 'status-online'}">
+                                ${user.role === 'teacher' ? 'Teacher' : 'Student'}
+                            </span>
+                        </td>
+                        <td>
+                            <small>
+                                X: ${user.x?.toFixed(1) || 0}<br>
+                                Z: ${user.z?.toFixed(1) || 0}
+                            </small>
+                        </td>
+                        <td>
+                            ${user.role !== 'teacher' ? 
+                                `<button class="btn-kick" onclick="kickUser('${user.uid}')">
+                                    🚫 KICK
+                                </button>` : 
+                                '<span style="color:#ffaa00;">⚠️ Guru</span>'
+                            }
+                        </td>
+                    </tr>
+                `).join('');
+                
+                addLog(`🔄 Data refresh: ${users.length} user online (${studentCount} siswa)`, 'info');
+            } catch (err) {
+                addLog(`❌ Gagal refresh data: ${err.message}`, 'error');
+                console.error('Refresh error:', err);
+            }
+        }
+        
+        function kickUser(uid) {
+            if (confirm('Yakin mau menendang user ini dari kelas?')) {
+                socket.emit('admin_kick_user', uid);
+                addLog(`👢 Mengeluarkan user: ${uid}`, 'warning');
+                setTimeout(refreshUsers, 1000);
+            }
+        }
+        
+        function sendBroadcast() {
+            const msg = document.getElementById('broadcastMsg').value.trim();
+            if (msg) {
+                socket.emit('admin_broadcast', msg);
+                addLog(`📢 Broadcast dikirim: "${msg}"`, 'info');
+                alert('✅ Pesan berhasil dikirim ke semua murid!');
+                document.getElementById('broadcastMsg').value = '';
+            } else {
+                alert('⚠️ Pesan tidak boleh kosong!');
+            }
+        }
+        
+        async function uploadSlide() {
+            const fileInput = document.getElementById('slideUpload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Pilih file slide terlebih dahulu!');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('slide', file);
+            
+            addLog(`📤 Mengupload slide: ${file.name}`, 'info');
+            
+            try {
+                const response = await fetch(`${REPLIT_URL}/upload-material`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog(`✅ Slide berhasil diupload: ${result.url}`, 'info');
+                    socket.emit('admin-change-slide', { slideUrl: result.url });
+                    
+                    const preview = document.getElementById('slidePreview');
+                    preview.innerHTML = `
+                        <div style="margin-top: 10px;">
+                            <strong>Preview:</strong><br>
+                            <img src="${result.url}" class="slide-preview" alt="Slide Preview">
+                            <br>
+                            <small>Slide telah dikirim ke semua murid</small>
+                        </div>
+                    `;
+                    
+                    alert('✅ Slide berhasil diupload dan dikirim ke semua murid!');
+                    fileInput.value = '';
+                } else {
+                    throw new Error(result.message || 'Upload gagal');
+                }
+            } catch (err) {
+                addLog(`❌ Upload slide gagal: ${err.message}`, 'error');
+                alert('❌ Upload slide gagal! Cek koneksi atau file.');
+            }
+        }
+        
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                sendBroadcast();
+            }
+        }
+        
+        function addLog(message, type = 'info') {
+            const logPanel = document.getElementById('log-panel');
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = type === 'info' ? 'ℹ️' : (type === 'warning' ? '⚠️' : '❌');
+            
+            logPanel.innerHTML += `
+                <div class="log-entry ${type}">
+                    [${timestamp}] ${icon} ${escapeHtml(message)}
+                </div>
+            `;
+            logPanel.scrollTop = logPanel.scrollHeight;
+            
+            if (logPanel.children.length > 100) {
+                logPanel.removeChild(logPanel.children[0]);
+            }
+        }
+        
+        function clearLogs() {
+            const logPanel = document.getElementById('log-panel');
+            logPanel.innerHTML = '<div class="log-entry info">✨ Log dibersihkan</div>';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Auto-refresh setiap 3 detik
+        let refreshInterval = setInterval(() => {
+            if (socket && socket.connected) {
+                refreshUsers();
+            }
+        }, 3000);
+        
+        // Periodic update metrics
+        setInterval(() => {
+            if (metrics.packetsPerSecond.length > 0) {
+                updateMetricsDisplay();
+            }
+        }, 1000);
+        
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+            if (socket) socket.disconnect();
+        });
+        
+        // Start
+        initChart();
+        initSocket();
+        
+        window.refreshUsers = refreshUsers;
+        window.kickUser = kickUser;
+        window.sendBroadcast = sendBroadcast;
+        window.uploadSlide = uploadSlide;
+        window.handleEnter = handleEnter;
+        window.clearLogs = clearLogs;
+        window.startThrottleTest = startThrottleTest;
+        window.resetMetrics = resetMetrics;
     </script>
 </body>
 </html>

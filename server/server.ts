@@ -106,7 +106,7 @@ app.post('/upload-material', upload.single('slide'), (req, res) => {
         const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const host = req.get('host');
         const fileUrl = `https://${host}/presentations/${file.filename}`;
-        
+
         console.log("🚀 File berhasil disimpan:", fileUrl);
         res.json({ success: true, url: fileUrl });
     } catch (error) {
@@ -156,7 +156,7 @@ const broadcastCapacity = () => {
 setInterval(() => {
     const now = Date.now();
     const timeout = 30000; // 30 detik timeout
-    
+
     activeUsers.forEach((player, uid) => {
         if (now - (player.lastHeartbeat || now) > timeout) {
             console.log(`⏰ Heartbeat timeout untuk ${player.displayName} (${uid})`);
@@ -165,12 +165,12 @@ setInterval(() => {
                 socket.disconnect(true);
             }
             activeUsers.delete(uid);
-            
+
             if (uid === currentTeacherId) {
                 currentTeacherId = null;
                 console.log("⚠️ Guru timeout, dihapus dari kelas");
             }
-            
+
             io.emit(NETWORK_EVENTS.USER_LEFT, uid);
             broadcastCapacity();
         }
@@ -183,7 +183,7 @@ setInterval(() => {
 
 io.on('connection', (socket: any) => {
     console.log(`🔌 Handshake baru: ${socket.id}`);
-    
+
     // ============================================
     // HEARTBEAT SYSTEM
     // ============================================
@@ -195,32 +195,32 @@ io.on('connection', (socket: any) => {
             socket.emit('heartbeat_ack', { timestamp: data.timestamp });
         }
     });
-    
+
     // ============================================
     // AUTHENTICATION & JOIN
     // ============================================
     socket.on(NETWORK_EVENTS.AUTH_JOIN, (data: any) => {
         const { uid, displayName, avatarModel, role } = data;
-        
+
         // Simpan UID ke socket
         socket.uid = uid;
-        
+
         // Cek double login
         if (activeUsers.has(uid)) {
             const existing = activeUsers.get(uid);
             if (existing && existing.socketId !== socket.id) {
                 console.log(`⚠️ Double login detected: ${displayName} (${uid})`);
-                socket.emit('kick_duplicate', { 
-                    message: "Akun ini sudah aktif di tab lain. Silakan tutup tab lain terlebih dahulu." 
+                socket.emit('kick_duplicate', {
+                    message: "Akun ini sudah aktif di tab lain. Silakan tutup tab lain terlebih dahulu."
                 });
                 setTimeout(() => socket.disconnect(), 1000);
                 return;
             }
         }
-        
+
         // Cek kapasitas untuk siswa
         const currentStudents = Array.from(activeUsers.values()).filter(u => u.role !== ROLES.TEACHER).length;
-        
+
         if (currentStudents >= MAX_STUDENTS && role !== ROLES.TEACHER) {
             console.log(`🚫 Kelas penuh: Menolak siswa ${displayName}`);
             socket.emit('error_message', {
@@ -230,7 +230,7 @@ io.on('connection', (socket: any) => {
             setTimeout(() => socket.disconnect(), 1000);
             return;
         }
-        
+
         // Data player
         const playerData: PlayerData = {
             uid: uid,
@@ -245,9 +245,9 @@ io.on('connection', (socket: any) => {
             lastUpdate: Date.now(),
             lastHeartbeat: Date.now()
         };
-        
+
         activeUsers.set(uid, playerData);
-        
+
         // Update teacher ID jika guru
         if (role === ROLES.TEACHER) {
             currentTeacherId = uid;
@@ -255,7 +255,7 @@ io.on('connection', (socket: any) => {
         } else {
             console.log(`👶 SISWA MASUK: ${displayName} (${uid})`);
         }
-        
+
         // Kirim daftar player yang sudah ada ke client baru
         const playersMap: any = {};
         activeUsers.forEach((player, key) => {
@@ -270,7 +270,7 @@ io.on('connection', (socket: any) => {
             };
         });
         socket.emit('currentPlayers', playersMap);
-        
+
         // Broadcast ke semua client lain
         socket.broadcast.emit(NETWORK_EVENTS.USER_JOINED, {
             uid: uid,
@@ -280,13 +280,13 @@ io.on('connection', (socket: any) => {
             z: playerData.z,
             ry: playerData.rotation
         });
-        
+
         // Update kapasitas
         broadcastCapacity();
-        
+
         console.log(`✅ ${displayName} bergabung. Total: ${activeUsers.size} user`);
     });
-    
+
     // ============================================
     // AVATAR MOVEMENT (DENGAN THROTTLE DI SISI CLIENT)
     // ============================================
@@ -303,7 +303,7 @@ io.on('connection', (socket: any) => {
                 player.rotation = data.rotation.y || data.rotation.ry || player.rotation;
             }
             player.lastUpdate = Date.now();
-            
+
             // Broadcast ke semua client KECUALI pengirim
             socket.broadcast.emit(NETWORK_EVENTS.AVATAR_UPDATE, {
                 uid: socket.uid,
@@ -312,7 +312,7 @@ io.on('connection', (socket: any) => {
             });
         }
     });
-    
+
     // ============================================
     // WHITEBOARD & DRAWING
     // ============================================
@@ -323,7 +323,7 @@ io.on('connection', (socket: any) => {
             socket.broadcast.emit('remoteDraw', data);
         }
     });
-    
+
     socket.on('clearBoard', () => {
         const player = activeUsers.get(socket.uid);
         if (player && player.role === ROLES.TEACHER) {
@@ -331,15 +331,15 @@ io.on('connection', (socket: any) => {
             console.log("🧹 Guru membersihkan papan tulis");
         }
     });
-    
-    socket.on("admin-change-slide", (data) => {
-        const player = activeUsers.get(socket.uid);
-        if (player && player.role === ROLES.TEACHER) {
-            console.log("📢 Guru mengganti slide:", data.slideUrl);
-            io.emit("update-whiteboard-slide", data);
-        }
-    });
-    
+
+    // socket.on("admin-change-slide", (data) => {
+    //     const player = activeUsers.get(socket.uid);
+    //     if (player && player.role === ROLES.TEACHER) {
+    //         console.log("📢 Guru mengganti slide:", data.slideUrl);
+    //         io.emit("update-whiteboard-slide", data);
+    //     }
+    // });
+
     // ============================================
     // WHITEBOARD SYNC
     // ============================================
@@ -351,72 +351,130 @@ io.on('connection', (socket: any) => {
             }
         }
     });
-    
+
     socket.on(NETWORK_EVENTS.WHITEBOARD_SYNC_RES, (data: any) => {
         io.to(data.to).emit(NETWORK_EVENTS.WHITEBOARD_SYNC_RES, { img: data.img });
     });
-    
+
     // ============================================
     // WEBRTC SIGNALING
     // ============================================
     socket.on(NETWORK_EVENTS.OFFER, (data: any) => {
         const target = activeUsers.get(data.toUid);
         if (target) {
-            io.to(target.socketId).emit(NETWORK_EVENTS.OFFER, { 
-                offer: data.offer, 
-                from: socket.uid 
+            io.to(target.socketId).emit(NETWORK_EVENTS.OFFER, {
+                offer: data.offer,
+                from: socket.uid
             });
         }
     });
-    
+
     socket.on(NETWORK_EVENTS.ANSWER, (data: any) => {
         const target = activeUsers.get(data.toUid);
         if (target) {
-            io.to(target.socketId).emit(NETWORK_EVENTS.ANSWER, { 
-                answer: data.answer, 
-                from: socket.uid 
+            io.to(target.socketId).emit(NETWORK_EVENTS.ANSWER, {
+                answer: data.answer,
+                from: socket.uid
             });
         }
     });
-    
+
     socket.on(NETWORK_EVENTS.ICE_CANDIDATE, (data: any) => {
         const target = activeUsers.get(data.toUid);
         if (target) {
-            io.to(target.socketId).emit(NETWORK_EVENTS.ICE_CANDIDATE, { 
-                candidate: data.candidate, 
-                from: socket.uid 
+            io.to(target.socketId).emit(NETWORK_EVENTS.ICE_CANDIDATE, {
+                candidate: data.candidate,
+                from: socket.uid
             });
         }
     });
-    
+
     // ============================================
     // ADMIN COMMANDS
     // ============================================
     socket.on('admin_kick_user', (targetUid: string) => {
-        const player = activeUsers.get(socket.uid);
-        if (player && player.role === ROLES.TEACHER) {
-            const target = activeUsers.get(targetUid);
-            if (target) {
-                io.to(target.socketId).emit('error_message', {
-                    title: "Dikeluarkan oleh Guru",
-                    message: "Anda telah dikeluarkan dari kelas."
-                });
-                setTimeout(() => {
-                    const targetSocket = io.sockets.sockets.get(target.socketId);
-                    if (targetSocket) targetSocket.disconnect();
-                }, 1000);
-            }
+        console.log(`🔨 Admin kick command received for: ${targetUid}`);
+
+        const target = activeUsers.get(targetUid);
+        if (target) {
+            console.log(`👢 Kicking user: ${target.displayName} (${targetUid})`);
+
+            // Kirim pesan ke user yang akan di-kick
+            io.to(target.socketId).emit('error_message', {
+                title: "Dikeluarkan oleh Admin",
+                message: "Anda telah dikeluarkan dari kelas oleh Admin."
+            });
+
+            // Kirim notifikasi ke admin bahwa kick berhasil
+            socket.emit('kick_success', { uid: targetUid, name: target.displayName });
+
+            // Putuskan koneksi setelah pesan terkirim
+            setTimeout(() => {
+                const targetSocket = io.sockets.sockets.get(target.socketId);
+                if (targetSocket) {
+                    targetSocket.disconnect(true);
+                }
+                // Hapus dari activeUsers
+                activeUsers.delete(targetUid);
+
+                // Broadcast ke semua client bahwa user left
+                io.emit(NETWORK_EVENTS.USER_LEFT, targetUid);
+                broadcastCapacity();
+            }, 500);
+        } else {
+            console.log(`⚠️ User ${targetUid} not found`);
+            socket.emit('kick_error', { uid: targetUid, message: 'User not found' });
         }
     });
-    
+
+    // 2. BROADCAST PENGUMUMAN
     socket.on('admin_broadcast', (message: string) => {
-        const player = activeUsers.get(socket.uid);
-        if (player && player.role === ROLES.TEACHER) {
+        console.log(`📢 ADMIN BROADCAST: "${message}"`);
+
+        // Cek apakah pengirim adalah admin/guru
+        const sender = activeUsers.get(socket.uid);
+        if (sender && sender.role === ROLES.TEACHER) {
+            // Kirim ke SEMUA client (termasuk pengirim)
             io.emit('announcement', message);
-            console.log(`📢 Pengumuman dari ${player.displayName}: ${message}`);
+            console.log(`✅ Broadcast sent to all clients: ${message}`);
+        } else {
+            console.log(`⚠️ Non-teacher tried to broadcast: ${socket.uid}`);
+            socket.emit('error_message', {
+                title: "Akses Ditolak",
+                message: "Hanya Guru yang bisa melakukan broadcast."
+            });
         }
     });
-    
+
+    // 3. CHANGE SLIDE
+    socket.on('admin-change-slide', (data: { slideUrl: string }) => {
+        console.log(`📸 ADMIN CHANGE SLIDE: ${data.slideUrl}`);
+
+        const sender = activeUsers.get(socket.uid);
+        if (sender && sender.role === ROLES.TEACHER) {
+            io.emit('update-whiteboard-slide', data);
+            console.log(`✅ Slide broadcast to all clients`);
+        }
+    });
+
+    // 4. TEST PACKET untuk throttle monitoring
+    socket.on('admin_test_packet', (data: any) => {
+        // Just echo back for testing, no action needed
+        if (process.env.NODE_ENV === 'development') {
+            // Optional: echo back untuk test latency
+            socket.emit('admin_test_response', { echo: data, timestamp: Date.now() });
+        }
+    });
+
+    // 5. REQUEST STATS
+    socket.on('admin_request_stats', () => {
+        const studentCount = Array.from(activeUsers.values()).filter(u => u.role !== ROLES.TEACHER).length;
+        socket.emit('capacityUpdate', {
+            current: studentCount,
+            max: MAX_STUDENTS
+        });
+    });
+
     // ============================================
     // DISCONNECT HANDLER
     // ============================================
@@ -425,12 +483,12 @@ io.on('connection', (socket: any) => {
             const player = activeUsers.get(socket.uid);
             if (player && player.socketId === socket.id) {
                 console.log(`❌ ${player.displayName} (${player.role}) keluar`);
-                
+
                 if (socket.uid === currentTeacherId) {
                     currentTeacherId = null;
                     console.log("⚠️ Guru meninggalkan kelas!");
                 }
-                
+
                 activeUsers.delete(socket.uid);
                 io.emit(NETWORK_EVENTS.USER_LEFT, socket.uid);
                 broadcastCapacity();

@@ -132,11 +132,7 @@ export class NetworkManager {
             });
         });
 
-        // this.socket.on(NETWORK_EVENTS.USER_JOINED, (player) => {
-        //     this.avatarManager.createAvatar(player);
-        //     this.initWebRTC(player.uid, false);
-        // });
-
+       
         //Melihat ada orang baru yang baru saja masuk
         this.socket.on(NETWORK_EVENTS.USER_JOINED, (player) => {
             console.log(`Ada murid baru masuk: ${player.displayName} (${player.uid})`);
@@ -175,46 +171,7 @@ export class NetworkManager {
             this.peerVoices.delete(uid);
         });
 
-        // Di dalam setupSocketListeners()
-
-        // this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
-        //     // 1. Cek apakah datanya punya UID
-        //     // 2. Cek apakah UID-nya BUKAN kita (Jangan gerakkan diri sendiri lewat sinyal server)
-        //     if (data.uid && data.uid !== this.localUid) {
-        //         // console.log(`Menggerakkan kawan: ${data.uid}`);
-        //         this.avatarManager.updateAvatar(data.uid, data.position, data.rotation);
-        //     }
-        // });
-
-        // this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
-        //     if (data.uid && data.uid !== this.localUid) {
-        //         // 🔥 Gabungkan position dan rotation ke dalam satu objek (argumen kedua)
-        //         this.avatarManager.updateAvatar(data.uid, {
-        //             x: data.position.x,
-        //             y: data.position.y,
-        //             z: data.position.z,
-        //             ry: data.rotation ? (data.rotation.y || data.rotation.ry) : 0
-        //         });
-        //     }
-        // });
-
-        // this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
-        //     // 1. Cek apakah datanya punya UID dan bukan diri kita sendiri
-        //     console.log("📥 Data kawan diterima dari server:", data.uid); // Tambahkan ini
-        //     if (data.uid && data.uid !== this.localUid) {
-
-        //         // 🔥 SOLUSI: Bungkus position dan rotation jadi SATU objek (Argumen ke-2)
-        //         const payload = {
-        //             x: data.position.x,
-        //             y: data.position.y,
-        //             z: data.position.z,
-        //             ry: data.rotation ? (data.rotation.y || data.rotation.ry) : 0
-        //         };
-
-        //         // Sekarang kita panggil cuma 2 argumen: (UID, PAYLOAD)
-        //         this.avatarManager.updateAvatar(data.uid, payload);
-        //     }
-        // });
+        
         // NetworkManager.ts - setupSocketListeners
         this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
             // 🔥 PERBAIKAN: Filter lebih ketat
@@ -254,31 +211,7 @@ export class NetworkManager {
         });
 
 
-        // this.socket.on("remoteDraw", (data: any) => {
-        //     if (this.whiteboardManager) {
-        //         // Siswa menggambar di papan mereka berdasarkan data dari Guru
-        //         this.whiteboardManager.drawLocally(
-        //             data.x1, data.y1,
-        //             data.x2, data.y2,
-        //             data.color,
-        //             data.size
-        //         );
-        //     }
-        // });
-        // Di setupSocketListeners() NetworkManager.ts
-
-        // Pastikan Siswa dengerin 'remoteDraw' sesuai perintah Server!
-        // this.socket.on("remoteDraw", (data: any) => {
-        //     console.log("Menerima coretan remote dari Guru!"); // Cek di console Siswa
-        //     if (this.whiteboardManager) {
-        //         this.whiteboardManager.drawLocally(
-        //             data.x1, data.y1,
-        //             data.x2, data.y2,
-        //             data.color,
-        //             data.size
-        //         );
-        //     }
-        // });
+       
 
         // SISWA: Menerima coretan dari Guru
         // NetworkManager.ts - Di dalam setupSocketListeners()
@@ -305,22 +238,7 @@ export class NetworkManager {
             }
         });
 
-        // this.socket.on('capacityUpdate', (data: { current: number, max: number }) => {
-        //     const currentEl = document.getElementById('current-cap');
-        //     const maxEl = document.getElementById('max-cap');
-
-        //     if (currentEl && maxEl) {
-        //         currentEl.innerText = data.current.toString();
-        //         maxEl.innerText = data.max.toString();
-
-        //         // Kasih efek warna merah kalau sudah mau penuh
-        //         const indicator = document.getElementById('capacity-indicator');
-        //         if (indicator) {
-        //             indicator.style.color = data.current >= data.max ? '#ff0000' : '#00ff00';
-        //             indicator.style.borderColor = data.current >= data.max ? '#ff0000' : '#00ff00';
-        //         }
-        //     }
-        // });
+        
 
         // DI SISI CLIENT (NetworkManager.ts atau main.ts)
         this.socket.on('capacityUpdate', (data: { current: number, max: number }) => {
@@ -351,20 +269,7 @@ export class NetworkManager {
         });
     }
 
-    /**
-     * FIX ERROR 1: Fungsi pengaman agar track tidak ditambah dua kali
-     */
-    // private addLocalTracksToPeer(pv: PeerVoice) {
-    //     if (!this.localStream) return;
-
-    //     this.localStream.getTracks().forEach(track => {
-    //         // Cek dulu apakah track ini sudah pernah ditempel ke koneksi ini
-    //         const alreadyExists = pv.peerConnection.getSenders().find(s => s.track === track);
-    //         if (!alreadyExists) {
-    //             pv.peerConnection.addTrack(track, this.localStream!);
-    //         }
-    //     });
-    // }
+   
 
     private addLocalTracksToPeer(pv: PeerVoice) {
         if (!this.localStream) {

@@ -59,6 +59,15 @@ async function bootstrap() {
     const avatarManager = new AvatarManager(scene);
     const voiceManager = new VoiceManager(scene);
     const networkManager = new NetworkManager(SERVER_URL, avatarManager);
+    // Setup heartbeat (kirim sinyal setiap 10 detik)
+    setInterval(() => {
+        if (networkManager.socket && networkManager.socket.connected && user.uid) {
+            networkManager.socket.emit('heartbeat', {
+                uid: user.uid,
+                timestamp: Date.now()
+            });
+        }
+    }, 10000);
     const wbManager = new WhiteboardManager(scene, networkManager, user.role);
 
     (networkManager as any).voiceManager = voiceManager;

@@ -167,48 +167,48 @@ function setupKeyboardInput(scene: BABYLON.Scene, avatarManager: AvatarManager, 
 
 function setupMobileInput(scene: BABYLON.Scene, avatarManager: AvatarManager, canvas: HTMLCanvasElement, socket: any) {
     console.log("📱 Setting up mobile controls...");
-    
+
     // Tampilkan UI mobile
     const mobileUI = document.getElementById("mobile-controls");
     if (mobileUI) mobileUI.style.display = "flex";
-    
+
     // 🔥 PERBAIKAN: Inisialisasi VirtualJoystick dengan canvas yang benar
     const leftJoy = new BABYLON.VirtualJoystick(true);
     const rightJoy = new BABYLON.VirtualJoystick(false);
-    
+
     // 🔥 TAMBAHKAN: Atur canvas untuk joystick
     leftJoy.setJoystickSensibility(0.5);
     rightJoy.setJoystickSensibility(0.5);
-    
+
     // 🔥 TAMBAHKAN: Pastikan canvas menerima touch events
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
     }, { passive: false });
-    
+
     canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
     }, { passive: false });
-    
+
     // 🔥 TAMBAHKAN: Variables untuk smoothing movement
     let moveDirection = { x: 0, z: 0 };
     let lastUpdateTime = Date.now();
-    
+
     // 🔥 TAMBAHKAN: Fungsi untuk update movement
     function updateMovement() {
         if (!avatarManager.localAvatar) return;
-        
+
         const now = Date.now();
         const deltaTime = Math.min(0.033, (now - lastUpdateTime) / 1000);
         lastUpdateTime = now;
-        
+
         // Ambil input dari joystick
         let dx = leftJoy.deltaPosition.x;
         let dz = leftJoy.deltaPosition.y;
-        
+
         // Smooth movement dengan threshold
         if (Math.abs(dx) < 0.1) dx = 0;
         if (Math.abs(dz) < 0.1) dz = 0;
-        
+
         if (dx !== 0 || dz !== 0) {
             // Hitung arah gerakan berdasarkan kamera
             const camera = scene.activeCamera;
@@ -216,14 +216,14 @@ function setupMobileInput(scene: BABYLON.Scene, avatarManager: AvatarManager, ca
                 const forward = camera.getForwardRay().direction;
                 const moveDir = new BABYLON.Vector3(forward.x, 0, forward.z).normalize();
                 const rightDir = BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), moveDir).normalize();
-                
+
                 // Gabungkan input joystick dengan arah kamera
                 const moveVector = moveDir.scale(dz).add(rightDir.scale(-dx));
-                
+
                 // Terapkan pergerakan
                 const speed = 3.0 * deltaTime; // 3 unit per detik
                 avatarManager.localAvatar.position.addInPlace(moveVector.scale(speed));
-                
+
                 // Update rotasi berdasarkan arah gerakan
                 if (moveVector.length() > 0.01) {
                     const targetRot = Math.atan2(moveVector.x, moveVector.z);
@@ -233,7 +233,7 @@ function setupMobileInput(scene: BABYLON.Scene, avatarManager: AvatarManager, ca
                         0.3
                     );
                 }
-                
+
                 // Kirim update ke server
                 if (socket && socket.connected) {
                     socket.emit(NETWORK_EVENTS.AVATAR_UPDATE, {
@@ -250,31 +250,96 @@ function setupMobileInput(scene: BABYLON.Scene, avatarManager: AvatarManager, ca
                 }
             }
         }
-        
+
         // Request next frame
         requestAnimationFrame(updateMovement);
     }
-    
+
     // Start movement update loop
     updateMovement();
-    
+
     // 🔥 TAMBAHKAN: Handle rotasi kamera dengan right joystick
     let lastRightX = 0;
     function updateRotation() {
         if (!avatarManager.localAvatar) return;
-        
+
         const rightX = rightJoy.deltaPosition.x;
         if (Math.abs(rightX) > 0.1) {
             avatarManager.localAvatar.rotation.y += rightX * 0.05;
             lastRightX = rightX;
         }
-        
+
         requestAnimationFrame(updateRotation);
     }
-    
+
     updateRotation();
-    
+
     console.log("✅ Mobile controls initialized");
+
+    function addTouchMovementFallback(scene: BABYLON.Scene, avatarManager: AvatarManager, canvas: HTMLCanvasElement, socket: any) {
+        let touchStart = { x: 0, y: 0 };
+        let isTouching = false;
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                touchStart.x = e.touches[0].clientX;
+                touchStart.y = e.touches[0].clientY;
+                isTouching = true;
+                console.log("Touch started for movement");
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isTouching || !avatarManager.localAvatar || !scene.activeCamera) return;
+
+            const deltaX = e.touches[0].clientX - touchStart.x;
+            const deltaY = e.touches[0].clientY - touchStart.y;
+
+            // Konversi touch delta ke movement
+            const camera = scene.activeCamera;
+            const forward = camera.getForwardRay().direction;
+            const moveDir = new BABYLON.Vector3(forward.x, 0, forward.z).normalize();
+            const rightDir = BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), moveDir).normalize();
+
+            // Sensitivity
+            const sensitivity = 0.005;
+            const moveVector = moveDir.scale(-deltaY * sensitivity)
+                .add(rightDir.scale(-deltaX * sensitivity));
+
+            // Apply movement
+            avatarManager.localAvatar.position.addInPlace(moveVector);
+
+            // Update rotation
+            if (moveVector.length() > 0.01) {
+                const targetRot = Math.atan2(moveVector.x, moveVector.z);
+                avatarManager.localAvatar.rotation.y = targetRot;
+            }
+
+            // Reset touch start untuk continuous movement
+            touchStart.x = e.touches[0].clientX;
+            touchStart.y = e.touches[0].clientY;
+
+            // Send to server
+            if (socket && socket.connected) {
+                socket.emit(NETWORK_EVENTS.AVATAR_UPDATE, {
+                    uid: avatarManager.localUserId,
+                    position: avatarManager.localAvatar.position,
+                    rotation: { y: avatarManager.localAvatar.rotation.y }
+                });
+            }
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isTouching = false;
+            console.log("Touch ended");
+        });
+
+        console.log("Touch movement fallback added");
+    }
+    // Panggil fungsi ini di setupMobileInput
+    addTouchMovementFallback(scene, avatarManager, canvas, socket);
 }
 
 window.addEventListener("DOMContentLoaded", bootstrap);

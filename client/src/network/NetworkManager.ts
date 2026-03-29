@@ -48,19 +48,85 @@ export class NetworkManager {
         this.socket.emit(NETWORK_EVENTS.AUTH_JOIN, { uid, displayName, role });
     }
 
+    // public async startVoiceChat() {
+    //     try {
+    //         this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    //         console.log("🎤 Mikrofon Aktif!");
+
+    //         this.peerVoices.forEach(pv => {
+    //             this.addLocalTracksToPeer(pv);
+    //         });
+    //     } catch (e) {
+    //         console.error("❌ Gagal akses mik:", e);
+    //     }
+    // }
+
+    // NetworkManager.ts - Perbaiki startVoiceChat
+
     public async startVoiceChat() {
         try {
-            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            console.log("🎤 Mikrofon Aktif!");
+            // 🔥 Konfigurasi khusus untuk mobile
+            const constraints = {
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    sampleRate: 48000,
+                    channelCount: 1
+                }
+            };
 
+            console.log("🎤 Requesting microphone access with constraints:", constraints);
+
+            this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log("🎤 Mikrofon Aktif! Track count:", this.localStream.getAudioTracks().length);
+
+            // 🔥 Test microphone by playing back (optional)
+            const audioContext = new AudioContext();
+            const source = audioContext.createMediaStreamSource(this.localStream);
+            source.connect(audioContext.destination);
+            console.log("🔊 Microphone test - you should hear yourself");
+
+            // Tambahkan tracks ke semua peers
             this.peerVoices.forEach(pv => {
                 this.addLocalTracksToPeer(pv);
             });
+
+            // 🔥 Tampilkan indicator microphone aktif
+            this.showMicrophoneIndicator(true);
+
         } catch (e) {
             console.error("❌ Gagal akses mik:", e);
+            this.showMicrophoneIndicator(false);
+
+            // 🔥 Alert user di mobile
+            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                alert("Mohon izinkan akses mikrofon untuk fitur suara.\n\nJika tidak muncul, periksa pengaturan browser dan pastikan menggunakan HTTPS.");
+            }
         }
     }
 
+    private showMicrophoneIndicator(active: boolean) {
+        let indicator = document.getElementById('mic-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'mic-indicator';
+            indicator.style.position = 'fixed';
+            indicator.style.bottom = '20px';
+            indicator.style.right = '20px';
+            indicator.style.width = '40px';
+            indicator.style.height = '40px';
+            indicator.style.borderRadius = '20px';
+            indicator.style.backgroundColor = active ? '#4ade80' : '#ef4444';
+            indicator.style.border = '2px solid white';
+            indicator.style.zIndex = '9999';
+            indicator.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+            document.body.appendChild(indicator);
+        }
+
+        indicator.style.backgroundColor = active ? '#4ade80' : '#ef4444';
+        indicator.title = active ? 'Mikrofon Aktif' : 'Mikrofon Tidak Aktif';
+    }
     /**
      * FIX ERROR 2: Mengembalikan fungsi sendMovement yang hilang
      */
@@ -134,7 +200,7 @@ export class NetworkManager {
 
 
         //Melihat ada orang baru yang baru saja masuk
-        this.socket.on(NETWORK_EVENTS.USER_JOINED, (player) => {
+        this.socket.on(NETWORK_EVENTS.USER_JOINED, (player: any) => {
             console.log(`Ada murid baru masuk: ${player.displayName} (${player.uid})`);
 
             // Pastikan ini bukan diri kita sendiri (jaga-jaga server salah kirim)

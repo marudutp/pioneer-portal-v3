@@ -132,7 +132,7 @@ export class NetworkManager {
             });
         });
 
-       
+
         //Melihat ada orang baru yang baru saja masuk
         this.socket.on(NETWORK_EVENTS.USER_JOINED, (player) => {
             console.log(`Ada murid baru masuk: ${player.displayName} (${player.uid})`);
@@ -171,7 +171,7 @@ export class NetworkManager {
             this.peerVoices.delete(uid);
         });
 
-        
+
         // NetworkManager.ts - setupSocketListeners
         this.socket.on(NETWORK_EVENTS.AVATAR_UPDATE, (data: any) => {
             // 🔥 PERBAIKAN: Filter lebih ketat
@@ -211,7 +211,7 @@ export class NetworkManager {
         });
 
 
-       
+
 
         // SISWA: Menerima coretan dari Guru
         // NetworkManager.ts - Di dalam setupSocketListeners()
@@ -238,18 +238,33 @@ export class NetworkManager {
             }
         });
 
-        
+
 
         // DI SISI CLIENT (NetworkManager.ts atau main.ts)
         this.socket.on('capacityUpdate', (data: { current: number, max: number }) => {
             console.log("Menerima update kapasitas:", data);
+            // // 🔥 PANGGIL FUNGSI UPDATE UI DI SINI
+            // updateCapacityUI(data.current, data.max);
+            // // Cari elemen span yang ada di index.html Om
+            // const currentEl = document.getElementById('current-cap');
+            // const maxEl = document.getElementById('max-cap');
 
-            // Cari elemen span yang ada di index.html Om
-            const currentEl = document.getElementById('current-cap');
-            const maxEl = document.getElementById('max-cap');
+            // if (currentEl) currentEl.innerText = data.current.toString();
+            // if (maxEl) maxEl.innerText = data.max.toString();
+            // Panggil fungsi update UI jika tersedia
+            if (typeof window !== 'undefined' && window.updateCapacityUI) {
+                window.updateCapacityUI(data.current, data.max);
+                console.log(`✅ UI kapasitas diupdate ke: ${data.current}/${data.max}`);
+            } else {
+                console.warn("⚠️ Fungsi updateCapacityUI belum terdaftar di window");
 
-            if (currentEl) currentEl.innerText = data.current.toString();
-            if (maxEl) maxEl.innerText = data.max.toString();
+                // Fallback: update langsung ke DOM
+                const currentEl = document.getElementById('current-capacity');
+                const maxEl = document.getElementById('max-capacity');
+                if (currentEl) currentEl.innerText = data.current.toString();
+                if (maxEl) maxEl.innerText = data.max.toString();
+            }
+
         });
 
         // Tambahkan listener untuk update slide dari Admin
@@ -269,7 +284,7 @@ export class NetworkManager {
         });
     }
 
-   
+
 
     private addLocalTracksToPeer(pv: PeerVoice) {
         if (!this.localStream) {

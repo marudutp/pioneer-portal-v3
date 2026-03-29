@@ -1,173 +1,349 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Pioneer Portal V3 - Virtual Classroom</title>
     <style>
-        html,
-        body {
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
+        * {
             margin: 0;
             padding: 0;
-            background-color: #1a1a1a;
-            /* Warna background gelap elegan */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        #renderCanvas {
-            width: 100%;
-            height: 100%;
-            touch-action: none;
-            outline: none;
-            /* Supaya canvas gak goyang pas di-swipe jempol */
-            /* touch-action: none; */
-            -webkit-user-select: none;
+            box-sizing: border-box;
             user-select: none;
-
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Overlay Login */
+        body {
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            touch-action: none;
+        }
+
+        /* Canvas utama */
+        #renderCanvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            outline: none;
+            touch-action: none;
+        }
+
+        /* Overlay awal */
         #ui-overlay {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 10;
+            z-index: 1000;
             transition: opacity 0.5s ease;
+            pointer-events: none;
         }
 
-        .login-card {
-            background: #2d2d2d;
-            padding: 2rem;
-            border-radius: 15px;
+        .loader {
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            border: 1px solid #444;
-        }
-
-        h1 {
-            color: #00d2ff;
-            margin-bottom: 0.5rem;
-        }
-
-        p {
-            color: #ccc;
-            margin-bottom: 2rem;
-        }
-
-        #login-btn {
-            background-color: #4285F4;
             color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
         }
 
-        #login-btn:hover {
-            background-color: #357ae8;
-            transform: scale(1.05);
-        }
-
-        /* Status Audio */
-        #audio-status {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: #fff;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            pointer-events: none;
-        }
-
-        /* Container untuk joystick */
-        .joystick-container {
-            position: absolute;
-            bottom: 50px;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 40px;
-            box-sizing: border-box;
-            pointer-events: none;
-            /* Supaya nggak nge-blok klik di area lain */
-            z-index: 10;
-        }
-
-        /* Bulatan Joystick */
-        .joystick {
-            width: 120px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.2);
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
             border-radius: 50%;
-            pointer-events: auto;
-            /* Aktifkan sentuhan khusus di sini */
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            touch-action: none;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
         }
 
-        /* Supaya tulisan kapasitas gak kegeser-geser */
-        #capacity-indicator {
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader p {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        /* Header Info */
+        .info-panel {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 100;
+            font-family: monospace;
+            pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Kapasitas Siswa */
+        .capacity-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 100;
+            font-family: monospace;
+            pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .capacity-panel span {
+            color: #4ade80;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* Role Badge */
+        .role-badge {
+            position: fixed;
+            top: 60px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 5px 12px;
+            border-radius: 15px;
+            color: white;
+            font-size: 12px;
+            z-index: 100;
+            font-family: monospace;
+            pointer-events: none;
+        }
+
+        .role-badge.teacher {
+            background: rgba(239, 68, 68, 0.8);
+            border-left: 3px solid #ef4444;
+        }
+
+        .role-badge.student {
+            background: rgba(59, 130, 246, 0.8);
+            border-left: 3px solid #3b82f6;
+        }
+
+        /* Mobile Controls Container */
+        #mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: none;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        /* Joystick akan dibuat oleh Babylon.js, tapi kita styling container-nya */
+        .virtual-joystick-container {
+            pointer-events: auto !important;
+            width: 120px !important;
+            height: 120px !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            border-radius: 60px !important;
+            border: 2px solid rgba(255, 255, 255, 0.3) !important;
+            backdrop-filter: blur(5px) !important;
+        }
+
+        .virtual-joystick-thumb {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-radius: 30px !important;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+            width: 50px !important;
+            height: 50px !important;
+        }
+
+        /* Control Labels */
+        .control-label {
+            position: absolute;
+            bottom: 140px;
+            left: 20px;
+            color: white;
+            font-size: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 8px;
+            border-radius: 10px;
+            pointer-events: none;
+        }
+
+        .control-label.right {
+            left: auto;
+            right: 20px;
+        }
+
+        /* Debug Panel (hidden by default) */
+        #debug-panel {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #0f0;
+            padding: 5px 8px;
+            font-size: 9px;
+            font-family: monospace;
+            border-radius: 4px;
+            z-index: 9999;
+            pointer-events: none;
+            display: none;
+            max-width: 200px;
+            word-wrap: break-word;
+        }
+
+        /* Mobile specific styles */
+        @media (max-width: 768px) {
+
+            .info-panel,
+            .capacity-panel {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+
+            .role-badge {
+                font-size: 10px;
+                top: 50px;
+            }
+
+            .virtual-joystick-container {
+                width: 100px !important;
+                height: 100px !important;
+            }
+
+            .virtual-joystick-thumb {
+                width: 40px !important;
+                height: 40px !important;
+            }
+        }
+
+        /* Landscape mode adjustments */
+        @media (orientation: landscape) and (max-height: 500px) {
+            #mobile-controls {
+                bottom: 5px;
+            }
+
+            .virtual-joystick-container {
+                width: 80px !important;
+                height: 80px !important;
+            }
+
+            .control-label {
+                bottom: 95px;
+            }
+        }
+
+        /* Hide scrollbar */
+        ::-webkit-scrollbar {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-
+    <!-- Loading Overlay -->
     <div id="ui-overlay">
-        <div class="login-card">
-            <h1>PIONEER PORTAL V3</h1>
-            <p>Selamat datang di Kelas Virtual Masa Depan</p>
-            <button id="login-btn">Masuk dengan Google</button>
-            <button id="logout-btn"
-                style="display: none; position: absolute; top: 20px; right: 20px; z-index: 20; background: #ff4757; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                Keluar Kelas
-            </button>
+        <div class="loader">
+            <div class="loader-spinner"></div>
+            <p>Memasuki Kelas Virtual...</p>
         </div>
     </div>
-    <div id="capacity-indicator" style="
-    position: absolute; 
-    top: 20px; 
-    right: 20px; 
-    background: rgba(0,0,0,0.6); 
-    color: #00ff00; 
-    padding: 10px 15px; 
-    border-radius: 8px; 
-    font-family: 'Courier New', monospace;
-    border: 1px solid #00ff00;
-    pointer-events: none;
-    z-index: 100;
-">
-        Kapasitas: <span id="current-cap">0</span>/<span id="max-cap">10</span>
-    </div>
-    <canvas id="renderCanvas" style="touch-action: none; -webkit-user-select: none;"></canvas>
-    <div class="joystick-container" id="mobile-controls" style="display: none;">
-        <div id="leftJoystick" class="joystick"></div>
 
-        <div id="rightJoystick" class="joystick"></div>
+    <!-- Info Panel -->
+    <div class="info-panel" id="info-panel">
+        🎓 Pioneer Portal V3
     </div>
 
-    <div id="audio-status">Status: Menunggu Interaksi...</div>
+    <!-- Capacity Panel -->
+    <div class="capacity-panel" id="capacity-panel">
+        👥 Siswa: <span id="current-capacity">0</span>/<span id="max-capacity">10</span>
+    </div>
 
+    <!-- Role Badge (akan diisi oleh JS) -->
+    <div class="role-badge" id="role-badge">
+        Loading...
+    </div>
+
+    <!-- Mobile Controls Container -->
+    <div id="mobile-controls">
+        <!-- Joystick akan dibuat oleh Babylon.js di sini -->
+    </div>
+
+    <!-- Control Labels untuk Mobile -->
+    <div class="control-label" id="control-label-left" style="display: none;">
+        🎮 Gerak
+    </div>
+    <div class="control-label right" id="control-label-right" style="display: none;">
+        🔄 Putar
+    </div>
+
+    <!-- Debug Panel (hidden by default, enable with ?debug) -->
+    <div id="debug-panel"></div>
+
+    <!-- Canvas untuk Babylon.js -->
+    <canvas id="renderCanvas" touch-action="none"></canvas>
+
+    <!-- Script akan di-inject oleh Vite -->
     <script type="module" src="/src/main.ts"></script>
 
+    <script>
+        // Simple debug mode detection
+        (function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('debug')) {
+                const debugPanel = document.getElementById('debug-panel');
+                if (debugPanel) {
+                    debugPanel.style.display = 'block';
+                    console.log('🔧 Debug mode enabled');
+                }
+            }
+
+            // Detect mobile and show control labels
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                ('ontouchstart' in window) ||
+                (navigator.maxTouchPoints > 0);
+
+            if (isMobile) {
+                const leftLabel = document.getElementById('control-label-left');
+                const rightLabel = document.getElementById('control-label-right');
+                if (leftLabel) leftLabel.style.display = 'block';
+                if (rightLabel) rightLabel.style.display = 'block';
+                console.log('📱 Mobile mode detected - control labels enabled');
+            }
+
+            // Prevent zoom on double tap for better mobile experience
+            document.addEventListener('touchstart', function (e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // Log that HTML is loaded
+            console.log('✅ HTML loaded, waiting for Babylon.js initialization...');
+        })();
+    </script>
 </body>
 
 </html>

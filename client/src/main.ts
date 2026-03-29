@@ -37,8 +37,52 @@ interface AppUser extends User {
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || `${window.location.protocol}//${window.location.hostname}:3000`;
 let isStarted = false;
+// 🔥 EXPOSE KE GLOBAL WINDOW agar bisa dipanggil dari NetworkManager
+// 🔥 Deklarasi global untuk window.updateCapacityUI
+declare global {
+    interface Window {
+        updateCapacityUI?: (current: number, max: number) => void;
+    }
+}
 
+// 🔥 DEFINE DAN REGISTER FUNGSI UPDATE UI
+function setupCapacityUI() {
+    // Fungsi untuk update UI
+    const updateCapacityUI = (current: number, max: number) => {
+        const currentEl = document.getElementById('current-capacity');
+        const maxEl = document.getElementById('max-capacity');
+
+        if (currentEl) {
+            currentEl.innerText = current.toString();
+            console.log(`📊 [UI Update] Kapasitas: ${current}/${max}`);
+        } else {
+            console.error("❌ Element #current-capacity tidak ditemukan di DOM!");
+        }
+
+        if (maxEl) {
+            maxEl.innerText = max.toString();
+        }
+
+        // Optional: Update juga di panel lain
+        const capacityPanel = document.getElementById('capacity-panel');
+        if (capacityPanel) {
+            capacityPanel.style.border = current >= max ? '2px solid #ef4444' : '1px solid rgba(255,255,255,0.2)';
+        }
+    };
+
+    // Register ke global window agar bisa diakses dari NetworkManager
+    (window as any).updateCapacityUI = updateCapacityUI;
+
+    // Set initial value
+    updateCapacityUI(0, 10);
+
+    console.log("✅ Capacity UI system initialized");
+
+    return updateCapacityUI;
+}
 async function bootstrap() {
+    // 1. Setup capacity UI terlebih dahulu
+    const updateCapacityUI = setupCapacityUI();
     if (isStarted) return;
 
     // 1. UI Overlay
@@ -102,7 +146,8 @@ async function bootstrap() {
     networkManager.socket.on("player_disconnected", (uid: string) => {
         avatarManager.removeAvatar(uid);
     });
-
+    // 🔥 PANGGIL SAAT INITIAL LOAD (set nilai awal)
+    updateCapacityUI(0, 10);
     // 🔥 TAHAP 2: Join Jaringan
     networkManager.joinClass(user.uid, user.displayName || "User", myRole);
 
@@ -126,10 +171,26 @@ async function bootstrap() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0);
     if (isMobile) {
         setupMobileInput(scene, avatarManager, canvas, networkManager.socket);
+        setupMobileCamera(scene, canvas);
     } else {
         setupKeyboardInput(scene, avatarManager, scene.activeCamera as BABYLON.Camera, networkManager.socket);
     }
 
+    // 8. Minta update kapasitas setelah join
+    setTimeout(() => {
+        if (networkManager.socket && networkManager.socket.connected) {
+            networkManager.socket.emit('admin_request_stats');
+            console.log("📊 Meminta update kapasitas dari server...");
+        }
+    }, 1000);
+
+    // 9. Event listener untuk capacity update dari server (opsional, sebagai backup)
+    if (networkManager.socket) {
+        networkManager.socket.on('capacityUpdate', (data: any) => {
+            console.log("📊 [Main] Capacity update received:", data);
+            updateCapacityUI(data.current, data.max);
+        });
+    }
     // 7. UI & Ready
     new WhiteboardUI(wbManager, user.role);
     networkManager.setReady();
@@ -146,6 +207,22 @@ async function bootstrap() {
     window.addEventListener("resize", () => { engine.resize(); });
 }
 
+// 🔥 Function untuk update kapasitas di UI
+function updateCapacityUI(current: number, max: number) {
+    const currentEl = document.getElementById('current-capacity');
+    const maxEl = document.getElementById('max-capacity');
+
+    if (currentEl) {
+        currentEl.innerText = current.toString();
+        console.log(`📊 UI Kapasitas diupdate: ${current}/${max}`);
+    } else {
+        console.warn("⚠️ Element #current-capacity tidak ditemukan di DOM");
+    }
+
+    if (maxEl) {
+        maxEl.innerText = max.toString();
+    }
+}
 // ... (Fungsi setupKeyboardInput & setupMobileInput tetap sama seperti kodemu)
 function setupKeyboardInput(scene: BABYLON.Scene, avatarManager: AvatarManager, camera: BABYLON.Camera, socket: any) {
     const inputMap: any = {};
@@ -341,5 +418,47 @@ function setupMobileInput(scene: BABYLON.Scene, avatarManager: AvatarManager, ca
     // Panggil fungsi ini di setupMobileInput
     addTouchMovementFallback(scene, avatarManager, canvas, socket);
 }
+function setupMobileCamera(scene: BABYLON.Scene, canvas: HTMLCanvasElement) {
+    console.log("📱 Setting up mobile camera controls...");
 
+    const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
+    if (!camera) {
+        console.warn("Camera not found!");
+        return;
+    }
+
+    // 🔥 Konfigurasi camera untuk mobile
+    camera.pinchPrecision = 200; // Sensitivity for pinch zoom
+    camera.panningSensibility = 1000;
+    camera.wheelPrecision = 50;
+
+    // 🔥 Enable touch controls
+    camera.attachControl(canvas, true);
+
+    // 🔥 Set camera limits untuk menghindari view yang terlalu ekstrim
+    camera.lowerRadiusLimit = 5;
+    camera.upperRadiusLimit = 20;
+    camera.lowerAlphaLimit = -Math.PI / 2;
+    camera.upperAlphaLimit = Math.PI / 2;
+
+    // 🔥 Tambahkan debug indicator
+    const cameraDebug = document.createElement('div');
+    cameraDebug.style.position = 'fixed';
+    cameraDebug.style.bottom = '10px';
+    cameraDebug.style.right = '10px';
+    cameraDebug.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    cameraDebug.style.color = 'white';
+    cameraDebug.style.padding = '5px';
+    cameraDebug.style.fontSize = '10px';
+    cameraDebug.style.zIndex = '9999';
+    cameraDebug.style.borderRadius = '3px';
+    document.body.appendChild(cameraDebug);
+
+    // Update debug info
+    setInterval(() => {
+        cameraDebug.innerHTML = `Camera: α=${camera.alpha.toFixed(1)} β=${camera.beta.toFixed(1)}`;
+    }, 500);
+
+    console.log("✅ Mobile camera controls enabled");
+}
 window.addEventListener("DOMContentLoaded", bootstrap);

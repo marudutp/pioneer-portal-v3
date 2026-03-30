@@ -273,17 +273,16 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: white;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        /* ================= CANVAS (ANTI BLUR) ================= */
+        /* ================= CANVAS (ORIGINAL LOGIC) ================= */
         #renderCanvas {
             width: 100vw;
             height: 100vh;
-            visibility: hidden; /* */
+            visibility: hidden; 
             display: block;
             outline: none;
-            touch-action: none; /* */
+            touch-action: none;
         }
 
         /* ================= OVERLAY LOADER ================= */
@@ -298,7 +297,7 @@
             z-index: 10000;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.5s ease; /* */
+            transition: opacity 0.5s ease;
         }
 
         .loader-spin {
@@ -313,13 +312,13 @@
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* ================= LANDING PAGE ================= */
+        /* ================= LANDING PAGE CONTAINER ================= */
         #landing-page {
             position: fixed;
             inset: 0;
-            z-index: 9999;
+            z-index: 9000; /* Diturunkan sedikit agar popup sistem/firebase bisa muncul di atasnya */
             overflow-y: auto;
-            background: var(--bg-dark); /* */
+            background: var(--bg-dark);
             scroll-behavior: smooth;
         }
 
@@ -344,7 +343,7 @@
             border: 1px solid rgba(0, 206, 209, 0.3);
         }
 
-        /* ================= MARQUEE ANIMATION ================= */
+        /* ================= MARQUEE ================= */
         .marquee-container {
             overflow: hidden;
             white-space: nowrap;
@@ -353,13 +352,13 @@
         }
         
         .marquee-active .marquee-container {
-            width: 350px; /* Lebar teks berjalan */
+            width: 320px;
         }
 
         .marquee-text {
             display: inline-block;
             padding-left: 100%;
-            animation: marquee 10s linear infinite;
+            animation: marquee 12s linear infinite;
         }
 
         @keyframes marquee {
@@ -372,36 +371,38 @@
 <body>
 
     <div id="landing-page">
-        <header class="sticky top-0 z-50 flex justify-between items-center px-8 py-5 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
+        <header class="sticky top-0 z-[9001] flex justify-between items-center px-8 py-5 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
             <h1 class="text-2xl font-extrabold tracking-tighter text-white">CAMPUS<span class="text-[#00CED1]">3D</span></h1>
             <div class="flex gap-4">
-                <button onclick="openModal('daftar')" class="bg-[#00CED1] text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition">Daftar Sekarang</button>
+                <button id="loginBtn" onclick="openModal('daftar')" class="bg-[#00CED1] text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition">Daftar / Login</button>
             </div>
         </header>
 
-        <section class="relative pt-24 pb-20 px-6 text-center overflow-hidden">
-            <h2 class="text-5xl md:text-7xl font-extrabold leading-tight text-gradient mb-6">Ubah Keahlian Anda<br>Menjadi Dunia 3D</h2>
-            <p class="mt-6 text-gray-400 max-w-2xl mx-auto text-lg">Bukan sekadar Zoom. Dunia virtual imersif tanpa batas.</p>
+        <main>
+            <section class="relative pt-24 pb-20 px-6 text-center overflow-hidden">
+                <h2 class="text-5xl md:text-7xl font-extrabold leading-tight text-gradient mb-6">Ubah Keahlian Anda<br>Menjadi Dunia 3D</h2>
+                <p class="mt-6 text-gray-400 max-w-2xl mx-auto text-lg">Bukan sekadar Zoom. Dunia virtual imersif tanpa batas.</p>
 
-            <div class="mt-12 flex flex-col items-center gap-6">
-                <button id="enter-btn" class="bg-[#00CED1] text-black px-10 py-4 rounded-2xl font-extrabold text-xl shadow-[0_0_30px_rgba(0,206,209,0.3)] transition-all hover:-translate-y-1">
-                    🚀 MASUK DUNIA 3D
-                </button>
-                <div class="flex flex-wrap justify-center gap-8 mt-4 text-xs uppercase tracking-widest text-gray-500 font-bold">
-                    <div class="flex items-center gap-2"><span class="key-hint">W A S D</span> Gerak</div>
-                    <div class="flex items-center gap-2"><span class="key-hint">MOUSE</span> Orbit</div>
-                    <div class="flex items-center gap-2"><span class="key-hint">M</span> Mic</div>
+                <div class="mt-12 flex flex-col items-center gap-6">
+                    <button id="enter-btn" class="bg-[#00CED1] text-black px-10 py-4 rounded-2xl font-extrabold text-xl shadow-[0_0_30px_rgba(0,206,209,0.3)] transition-all hover:-translate-y-1">
+                        🚀 MASUK DUNIA 3D
+                    </button>
+                    <div class="flex flex-wrap justify-center gap-8 mt-4 text-xs uppercase tracking-widest text-gray-500 font-bold">
+                        <div class="flex items-center gap-2"><span class="key-hint">W A S D</span> Gerak</div>
+                        <div class="flex items-center gap-2"><span class="key-hint">MOUSE</span> Orbit</div>
+                        <div class="flex items-center gap-2"><span class="key-hint">M</span> Mic</div>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section class="py-20 text-center bg-white/5">
-            <div class="flex flex-col md:flex-row justify-center gap-4">
-                <button onclick="openModal('daftar')" class="bg-[#00CED1] text-black px-8 py-4 rounded-xl font-bold">Jadi Pengajar</button>
-                <button onclick="openModal('daftar')" class="border border-[#00CED1] text-[#00CED1] px-8 py-4 rounded-xl font-bold">Jadi Siswa</button>
-            </div>
-            <button id="enter-btn-2" class="mt-8 text-gray-500 hover:text-white underline text-sm transition">Masuk Sebagai Tamu 🚀</button>
-        </section>
+            <section class="py-20 text-center bg-white/5">
+                <div class="flex flex-col md:flex-row justify-center gap-4">
+                    <button onclick="openModal('daftar')" class="bg-[#00CED1] text-black px-8 py-4 rounded-xl font-bold">Jadi Pengajar</button>
+                    <button onclick="openModal('daftar')" class="border border-[#00CED1] text-[#00CED1] px-8 py-4 rounded-xl font-bold">Jadi Siswa</button>
+                </div>
+                <button id="enter-btn-2" class="mt-8 text-gray-500 hover:text-white underline text-sm transition">Masuk Sebagai Tamu 🚀</button>
+            </section>
+        </main>
 
         <footer class="py-12 px-8 border-t border-white/5 text-center">
             <div class="flex justify-center gap-8 text-sm text-gray-500 mb-4">
@@ -429,35 +430,41 @@
     <div id="universal-modal" class="fixed inset-0 z-[10001] hidden flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal()"></div>
         <div class="glass-card w-full max-w-lg p-8 rounded-3xl relative z-10 border-[#00CED1]/20">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
             <div id="modal-content"></div>
         </div>
     </div>
 
     <div id="ui-overlay"><div class="loader-spin"></div><p class="text-xs font-bold text-[#00CED1]">MEMASUKI DUNIA 3D...</p></div>
+    
     <canvas id="renderCanvas"></canvas>
 
     <script type="module" src="/src/main.ts"></script>
+
     <script>
-        // LOGIKA MARQUEE 10 DETIK
+        // Logika Marquee (Setiap 10 detik muncul selama 8 detik)
         const marqueeWrapper = document.getElementById('marquee-wrapper');
         setInterval(() => {
             marqueeWrapper.parentElement.classList.add('marquee-active');
             setTimeout(() => {
                 marqueeWrapper.parentElement.classList.remove('marquee-active');
-            }, 8000); // Tampil selama 8 detik sebelum sembunyi lagi
-        }, 10000); // Muncul setiap 10 detik
+            }, 8000);
+        }, 10000);
 
-        // LOGIKA MODAL
+        // Logika Modal
         const modal = document.getElementById("universal-modal");
         const modalContent = document.getElementById("modal-content");
         const contentData = {
-            daftar: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Pendaftaran</h3><p class="text-sm text-gray-400 mb-4">Pilih peran Anda untuk mulai menjelajah:</p><button class="w-full bg-[#00CED1] text-black py-3 rounded-lg font-bold mb-2">Daftar Pengajar</button><button class="w-full border border-white/20 py-3 rounded-lg font-bold">Daftar Siswa</button>`,
-            refund: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Kebijakan Refund</h3><p class="text-xs text-gray-400 leading-relaxed">Garansi 100% refund otomatis jika pengajar tidak hadir dalam 15 menit pertama kelas. Dana aman di sistem Escrow kami.</p>`,
-            terms: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Syarat & Ketentuan</h3><p class="text-xs text-gray-400 leading-relaxed">1. Komisi platform 15%.<br>2. Dilarang menyebarkan konten negatif.<br>3. Dana cair 24 jam setelah sesi sukses.</p>`
+            daftar: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Akses Campus3D</h3><p class="text-sm text-gray-400 mb-6">Masuk untuk menyimpan progres belajar dan aset 3D Anda.</p><button id="googleSignInBtn" class="w-full bg-white text-black py-3 rounded-lg font-bold flex items-center justify-center gap-2 mb-4 hover:bg-gray-200 transition">Login dengan Google</button><div class="text-center text-[10px] text-gray-500 uppercase tracking-widest">Atau Daftar Sebagai</div><div class="grid grid-cols-2 gap-2 mt-4"><button class="border border-white/10 py-2 rounded-lg text-xs font-bold hover:border-[#00CED1]">Pengajar</button><button class="border border-white/10 py-2 rounded-lg text-xs font-bold hover:border-[#00CED1]">Siswa</button></div>`,
+            refund: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Kebijakan Refund</h3><p class="text-xs text-gray-400 leading-relaxed italic">Garansi 100% refund otomatis jika pengajar tidak hadir dalam 15 menit pertama kelas. Dana Anda aman bersama Campus3D Escrow.</p>`,
+            terms: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Syarat & Ketentuan</h3><p class="text-[10px] text-gray-400 leading-relaxed">1. Komisi platform 15% per transaksi tiket.<br>2. Dilarang menyebarkan konten SARA/Negatif.<br>3. Dana hasil mengajar cair 24 jam setelah sesi sukses.</p>`
         };
 
-        function openModal(type) { modalContent.innerHTML = contentData[type]; modal.classList.remove("hidden"); }
+        function openModal(type) { 
+            modalContent.innerHTML = contentData[type]; 
+            modal.classList.remove("hidden"); 
+            // Jika ada button Google di dalam modal, pastikan bisa diakses Firebase logic Anda
+        }
         function closeModal() { modal.classList.add("hidden"); }
 
         // LOGIKA ENTER WORLD (ASLI)
@@ -465,13 +472,22 @@
             const overlay = document.getElementById("ui-overlay");
             overlay.style.opacity = "1";
             overlay.style.pointerEvents = "auto";
+            
+            // Trigger audio permission
             navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => { });
+            
             document.getElementById("landing-page").style.display = "none";
             const canvas = document.getElementById("renderCanvas");
             canvas.style.visibility = "visible";
+            
             window.dispatchEvent(new Event('resize'));
-            setTimeout(() => { overlay.style.opacity = "0"; overlay.style.pointerEvents = "none"; }, 2000);
+            
+            setTimeout(() => { 
+                overlay.style.opacity = "0"; 
+                overlay.style.pointerEvents = "none"; 
+            }, 2000);
         }
+
         document.getElementById("enter-btn").onclick = enterWorld;
         document.getElementById("enter-btn-2").onclick = enterWorld;
     </script>

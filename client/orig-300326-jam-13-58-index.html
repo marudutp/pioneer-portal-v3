@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus3D - Virtual Classroom</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: sans-serif;
+        }
+
+        /* ================= CANVAS (ANTI BLUR) ================= */
+        #renderCanvas {
+            width: 100vw;
+            height: 100vh;
+            visibility: hidden;
+        }
+
+        /* ================= OVERLAY ================= */
+        #ui-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: 0.5s;
+        }
+
+        /* ================= LANDING ================= */
+        #landing-page {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            overflow-y: auto;
+            background: #020617;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ================= LANDING (MARKETING FULL) ================= -->
+    <div id="landing-page" class="bg-gray-950 text-white">
+
+        <!-- HEADER -->
+        <header class="flex justify-between items-center px-8 py-5 border-b border-gray-800">
+            <h1 class="text-2xl font-bold text-cyan-400">Campus3D</h1>
+        </header>
+
+        <!-- HERO -->
+        <section class="text-center py-24 px-6">
+            <h2 class="text-4xl md:text-6xl font-bold">
+                Ubah Keahlian Anda Menjadi Dunia 3D
+            </h2>
+
+            <p class="mt-6 text-gray-400 max-w-2xl mx-auto">
+                Bukan sekadar Zoom. Ini adalah dunia virtual imersif tanpa batas.
+            </p>
+
+            <button id="enter-btn" class="mt-8 bg-cyan-400 text-black px-6 py-3 rounded-lg font-semibold">
+                🚀 Masuk Dunia 3D
+            </button>
+            <!-- Guidance -->
+            <div class="mt-10 grid md:grid-cols-3 gap-6 text-sm text-gray-400">
+                <div>⌨️ <b>W A S D</b><br />Gerakkan avatar</div>
+                <div>🖱️ <b>Mouse</b><br />Lihat 360°</div>
+                <div>🎤 <b>Tombol M</b><br />Aktifkan suara</div>
+            </div>
+        </section>
+
+        <!-- FEATURES -->
+        <section class="py-20 px-6 text-center">
+            <h3 class="text-3xl font-bold mb-12">Kenapa Campus3D?</h3>
+
+            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+
+                <div class="p-6 border border-gray-800 rounded-xl">
+                    <h4 class="text-cyan-400 font-bold">3D Imersif</h4>
+                    <p class="text-gray-400">Belajar seperti di dunia nyata.</p>
+                </div>
+
+                <div class="p-6 border border-gray-800 rounded-xl">
+                    <h4 class="text-cyan-400 font-bold">Tanpa Install</h4>
+                    <p class="text-gray-400">Langsung di browser.</p>
+                </div>
+
+                <div class="p-6 border border-gray-800 rounded-xl">
+                    <h4 class="text-cyan-400 font-bold">Spatial Audio</h4>
+                    <p class="text-gray-400">Suara sesuai posisi avatar.</p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="py-20 text-center">
+            <h3 class="text-3xl font-bold mb-6">Siap Masuk Dunia Baru?</h3>
+
+            <button id="enter-btn-2" class="bg-cyan-400 text-black px-8 py-4 rounded-xl font-semibold">
+                🚀 Masuk Sekarang
+            </button>
+
+        </section>
+
+    </div>
+
+    <!-- ================= LOADER ================= -->
+    <div id="ui-overlay">
+        <p style="color:white;">Memasuki Dunia 3D...</p>
+    </div>
+
+    <!-- ================= UI ================= -->
+    <div style="position:fixed; top:10px; left:10px; color:white;">🎓 Campus3D</div>
+
+    <!-- ================= CANVAS ================= -->
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- ================= ENGINE ================= -->
+    <script type="module" src="/src/main.ts"></script>
+
+    <!-- ================= CONTROL ================= -->
+    <script>
+        function enterWorld() {
+            const overlay = document.getElementById("ui-overlay");
+            overlay.style.opacity = "1";
+
+            // mic trigger
+            navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => { });
+
+            // hide landing
+            document.getElementById("landing-page").style.display = "none";
+
+            // show canvas (ANTI BLUR)
+            const canvas = document.getElementById("renderCanvas");
+            canvas.style.visibility = "visible";
+
+            // fix resolution
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        document.getElementById("enter-btn").onclick = enterWorld;
+        document.getElementById("enter-btn-2").onclick = enterWorld;
+    </script>
+    <div class="flex justify-center gap-4">
+        <button class="bg-primary text-black px-6 py-3 rounded-lg font-semibold">
+            Jadi Pengajar
+        </button>
+        <button class="border border-primary px-6 py-3 rounded-lg text-primary">
+            Jadi Siswa
+        </button>
+    </div>
+    <!-- ================= FOOTER ================= -->
+    <footer class="border-t border-gray-800 py-8 px-6 text-center text-gray-500 text-sm">
+        <p>� 2026 Campus3D</p>
+        <div class="mt-4 flex justify-center gap-6">
+            <a href="#">Kebijakan Refund</a>
+            <a href="#">Syarat & Ketentuan</a>
+            <a href="#">Kontak Support</a>
+        </div>
+    </footer>
+</body>
+
+</html>

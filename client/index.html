@@ -3,173 +3,248 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campus3D - Virtual Classroom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Campus3D - Marketplace EdTech Imersif</title>
 
-    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --primary: #00CED1; /* Bright Cyan */
+            --bg-dark: #020617;
+        }
+
         body {
             margin: 0;
             overflow: hidden;
-            background: #000;
-            font-family: sans-serif;
+            background: var(--bg-dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: white;
         }
 
-        /* ================= CANVAS (ANTI BLUR) ================= */
+        /* ================= CANVAS (ANTI BLUR) - TETAP ASLI ================= */
         #renderCanvas {
             width: 100vw;
             height: 100vh;
             visibility: hidden;
+            display: block;
+            outline: none;
         }
 
-        /* ================= OVERLAY ================= */
+        /* ================= OVERLAY LOADER - REDESIGN ================= */
         #ui-overlay {
             position: fixed;
             inset: 0;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: radial-gradient(circle at center, #083344 0%, #020617 100%);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 10000;
             pointer-events: none;
             opacity: 0;
-            transition: 0.5s;
+            transition: opacity 0.5s ease;
         }
 
-        /* ================= LANDING ================= */
+        .loader-spin {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 206, 209, 0.2);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ================= LANDING PAGE - REDESIGN ================= */
         #landing-page {
             position: fixed;
             inset: 0;
             z-index: 9999;
             overflow-y: auto;
-            background: #020617;
+            background: var(--bg-dark);
+            scroll-behavior: smooth;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            border-color: var(--primary);
+            background: rgba(0, 206, 209, 0.05);
+        }
+
+        .text-gradient {
+            background: linear-gradient(to right, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .key-hint {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            color: var(--primary);
+            border: 1px solid rgba(0, 206, 209, 0.3);
         }
     </style>
 </head>
 
 <body>
 
-    <!-- ================= LANDING (MARKETING FULL) ================= -->
-    <div id="landing-page" class="bg-gray-950 text-white">
-
-        <!-- HEADER -->
-        <header class="flex justify-between items-center px-8 py-5 border-b border-gray-800">
-            <h1 class="text-2xl font-bold text-cyan-400">Campus3D</h1>
+    <div id="landing-page">
+        
+        <header class="sticky top-0 z-50 flex justify-between items-center px-8 py-5 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
+            <h1 class="text-2xl font-extrabold tracking-tighter text-white">
+                CAMPUS<span class="text-[#00CED1]">3D</span>
+            </h1>
+            <div class="flex gap-4">
+                <button class="text-sm font-semibold hover:text-[#00CED1] transition">Masuk</button>
+                <button class="bg-[#00CED1] text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition">Daftar</button>
+            </div>
         </header>
 
-        <!-- HERO -->
-        <section class="text-center py-24 px-6">
-            <h2 class="text-4xl md:text-6xl font-bold">
-                Ubah Keahlian Anda Menjadi Dunia 3D
+        <section class="relative pt-24 pb-20 px-6 text-center overflow-hidden">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_rgba(0,206,209,0.1)_0%,_transparent_70%)] pointer-events-none"></div>
+            
+            <h2 class="text-5xl md:text-7xl font-extrabold leading-tight text-gradient mb-6">
+                Ubah Keahlian Anda<br>Menjadi Dunia 3D
             </h2>
 
-            <p class="mt-6 text-gray-400 max-w-2xl mx-auto">
-                Bukan sekadar Zoom. Ini adalah dunia virtual imersif tanpa batas.
+            <p class="mt-6 text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
+                Bukan sekadar Zoom. Ini adalah <span class="text-white font-semibold">Dunia Virtual Imersif</span> di mana mengajar lebih hidup dan belajar lebih nyata. Tanpa install, langsung di browser.
             </p>
 
-            <button id="enter-btn" class="mt-8 bg-cyan-400 text-black px-6 py-3 rounded-lg font-semibold">
-                🚀 Masuk Dunia 3D
-            </button>
-            <!-- Guidance -->
-            <div class="mt-10 grid md:grid-cols-3 gap-6 text-sm text-gray-400">
-                <div>⌨️ <b>W A S D</b><br />Gerakkan avatar</div>
-                <div>🖱️ <b>Mouse</b><br />Lihat 360°</div>
-                <div>🎤 <b>Tombol M</b><br />Aktifkan suara</div>
+            <div class="mt-12 flex flex-col items-center gap-6">
+                <button id="enter-btn" class="bg-[#00CED1] text-black px-10 py-4 rounded-2xl font-extrabold text-xl shadow-[0_0_30px_rgba(0,206,209,0.3)] hover:shadow-[0_0_50px_rgba(0,206,209,0.5)] transition-all hover:-translate-y-1">
+                    🚀 MASUK DUNIA 3D
+                </button>
+                
+                <div class="flex flex-wrap justify-center gap-8 mt-4 text-xs uppercase tracking-widest text-gray-500 font-bold">
+                    <div class="flex items-center gap-2"><span class="key-hint">W A S D</span> Gerak</div>
+                    <div class="flex items-center gap-2"><span class="key-hint">MOUSE</span> Orbit 360°</div>
+                    <div class="flex items-center gap-2"><span class="key-hint">M</span> Mic On/Off</div>
+                </div>
             </div>
         </section>
 
-        <!-- FEATURES -->
-        <section class="py-20 px-6 text-center">
-            <h3 class="text-3xl font-bold mb-12">Kenapa Campus3D?</h3>
+        <section class="py-24 px-6 max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h3 class="text-3xl font-bold italic">Masa Depan Marketplace EdTech</h3>
+            </div>
 
-            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-
-                <div class="p-6 border border-gray-800 rounded-xl">
-                    <h4 class="text-cyan-400 font-bold">3D Imersif</h4>
-                    <p class="text-gray-400">Belajar seperti di dunia nyata.</p>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="glass-card p-10 rounded-3xl">
+                    <div class="w-12 h-12 bg-[#00CED1]/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-[#00CED1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <h4 class="text-xl font-bold mb-3">Sistem Escrow Aman</h4>
+                    <p class="text-gray-400 text-sm">Dana disimpan aman dan hanya cair 24 jam setelah kelas sukses. Refund 100% jika pengajar absen.</p>
                 </div>
 
-                <div class="p-6 border border-gray-800 rounded-xl">
-                    <h4 class="text-cyan-400 font-bold">Tanpa Install</h4>
-                    <p class="text-gray-400">Langsung di browser.</p>
+                <div class="glass-card p-10 rounded-3xl">
+                    <div class="w-12 h-12 bg-[#00CED1]/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-[#00CED1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                    </div>
+                    <h4 class="text-xl font-bold mb-3">Spatial Audio</h4>
+                    <p class="text-gray-400 text-sm">Suara mengecil saat menjauh dan mengeras saat mendekati avatar lain. Diskusi jadi sangat natural.</p>
                 </div>
 
-                <div class="p-6 border border-gray-800 rounded-xl">
-                    <h4 class="text-cyan-400 font-bold">Spatial Audio</h4>
-                    <p class="text-gray-400">Suara sesuai posisi avatar.</p>
+                <div class="glass-card p-10 rounded-3xl">
+                    <div class="w-12 h-12 bg-[#00CED1]/10 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-[#00CED1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h4 class="text-xl font-bold mb-3">Tanpa Instalasi</h4>
+                    <p class="text-gray-400 text-sm">Teknologi WebGL tercanggih memungkinkan akses dunia 3D langsung dari browser perangkat apapun.</p>
                 </div>
-
             </div>
         </section>
 
-        <!-- CTA -->
-        <section class="py-20 text-center">
-            <h3 class="text-3xl font-bold mb-6">Siap Masuk Dunia Baru?</h3>
+        <section class="py-24 bg-white/5 border-y border-white/5 text-center">
+            <h3 class="text-4xl font-extrabold mb-10">Pilih Jalur Pionir Anda</h3>
+            
+            <div class="flex flex-col md:flex-row justify-center gap-6 mb-12">
+                <button class="bg-[#00CED1] text-black px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition">
+                    Jadi Pengajar (3 Sesi Gratis)
+                </button>
+                <button class="border-2 border-[#00CED1] text-[#00CED1] px-10 py-5 rounded-2xl font-bold text-lg hover:bg-[#00CED1] hover:text-black transition">
+                    Jadi Siswa (Garansi Refund)
+                </button>
+            </div>
 
-            <button id="enter-btn-2" class="bg-cyan-400 text-black px-8 py-4 rounded-xl font-semibold">
-                🚀 Masuk Sekarang
+            <button id="enter-btn-2" class="text-gray-500 hover:text-white underline text-sm transition">
+                Lewati dan Masuk Sebagai Tamu 🚀
             </button>
-
         </section>
 
+        <footer class="py-16 px-8 border-t border-white/5 bg-gray-950">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+                <div class="text-left">
+                    <h1 class="text-xl font-bold mb-2">CAMPUS<span class="text-[#00CED1]">3D</span></h1>
+                    <p class="text-gray-500 text-sm">© 2026 Campus3D by Pioneer Portal Team</p>
+                </div>
+                <div class="flex gap-8 text-sm text-gray-400">
+                    <a href="#" class="hover:text-[#00CED1]">Kebijakan Refund</a>
+                    <a href="#" class="hover:text-[#00CED1]">Syarat & Ketentuan</a>
+                    <a href="#" class="hover:text-[#00CED1]">Kontak Support</a>
+                </div>
+            </div>
+        </footer>
     </div>
 
-    <!-- ================= LOADER ================= -->
     <div id="ui-overlay">
-        <p style="color:white;">Memasuki Dunia 3D...</p>
+        <div class="loader-spin"></div>
+        <p class="text-sm font-bold tracking-widest text-[#00CED1] animate-pulse">MEMASUKI DUNIA 3D...</p>
     </div>
 
-    <!-- ================= UI ================= -->
-    <div style="position:fixed; top:10px; left:10px; color:white;">🎓 Campus3D</div>
+    <div class="fixed top-4 left-4 z-[50] flex items-center gap-3 pointer-events-none">
+        <div class="bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full flex items-center gap-2">
+            <div class="w-2 h-2 bg-[#00CED1] rounded-full animate-ping"></div>
+            <span class="text-xs font-bold uppercase tracking-widest text-white">🎓 Campus3D Live</span>
+        </div>
+    </div>
 
-    <!-- ================= CANVAS ================= -->
     <canvas id="renderCanvas"></canvas>
 
-    <!-- ================= ENGINE ================= -->
     <script type="module" src="/src/main.ts"></script>
 
-    <!-- ================= CONTROL ================= -->
     <script>
         function enterWorld() {
             const overlay = document.getElementById("ui-overlay");
             overlay.style.opacity = "1";
+            overlay.style.pointerEvents = "auto";
 
-            // mic trigger
+            // mic trigger asli
             navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => { });
 
-            // hide landing
+            // hide landing asli
             document.getElementById("landing-page").style.display = "none";
 
-            // show canvas (ANTI BLUR)
+            // show canvas (ANTI BLUR) asli
             const canvas = document.getElementById("renderCanvas");
             canvas.style.visibility = "visible";
 
-            // fix resolution
+            // fix resolution asli
             window.dispatchEvent(new Event('resize'));
+            
+            // Auto hide loader after 2s for smoother feel
+            setTimeout(() => {
+                overlay.style.opacity = "0";
+                overlay.style.pointerEvents = "none";
+            }, 2000);
         }
 
         document.getElementById("enter-btn").onclick = enterWorld;
         document.getElementById("enter-btn-2").onclick = enterWorld;
     </script>
-    <div class="flex justify-center gap-4">
-        <button class="bg-primary text-black px-6 py-3 rounded-lg font-semibold">
-            Jadi Pengajar
-        </button>
-        <button class="border border-primary px-6 py-3 rounded-lg text-primary">
-            Jadi Siswa
-        </button>
-    </div>
-    <!-- ================= FOOTER ================= -->
-    <footer class="border-t border-gray-800 py-8 px-6 text-center text-gray-500 text-sm">
-        <p>� 2026 Campus3D</p>
-        <div class="mt-4 flex justify-center gap-6">
-            <a href="#">Kebijakan Refund</a>
-            <a href="#">Syarat & Ketentuan</a>
-            <a href="#">Kontak Support</a>
-        </div>
-    </footer>
 </body>
 
 </html>

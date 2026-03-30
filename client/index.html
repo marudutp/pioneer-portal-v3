@@ -261,7 +261,7 @@
 
     <style>
         :root {
-            --primary: #00CED1; /* Bright Cyan */
+            --primary: #00CED1;
             --bg-dark: #020617;
         }
 
@@ -273,7 +273,7 @@
             color: white;
         }
 
-        /* ================= CANVAS (ANTI BLUR) - TETAP ASLI ================= */
+        /* ================= CANVAS (TETAP ASLI) ================= */
         #renderCanvas {
             width: 100vw;
             height: 100vh;
@@ -282,7 +282,7 @@
             outline: none;
         }
 
-        /* ================= OVERLAY LOADER - REDESIGN ================= */
+        /* ================= OVERLAY LOADER ================= */
         #ui-overlay {
             position: fixed;
             inset: 0;
@@ -309,11 +309,11 @@
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* ================= LANDING PAGE - REDESIGN ================= */
+        /* ================= LANDING PAGE ================= */
         #landing-page {
             position: fixed;
             inset: 0;
-            z-index: 9999;
+            z-index: 999; /* Z-index diturunkan agar popup auth tidak tertutup */
             overflow-y: auto;
             background: var(--bg-dark);
             scroll-behavior: smooth;
@@ -323,50 +323,42 @@
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
-        }
-
-        .glass-card:hover {
-            border-color: var(--primary);
-            background: rgba(0, 206, 209, 0.05);
-        }
-
-        .text-gradient {
-            background: linear-gradient(to right, #fff, var(--primary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .key-hint {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-family: monospace;
-            color: var(--primary);
-            border: 1px solid rgba(0, 206, 209, 0.3);
         }
 
         /* ================= MARQUEE ANIMATION ================= */
-        .marquee-container {
+        .marquee-wrapper {
             overflow: hidden;
-            white-space: nowrap;
             width: 0;
-            transition: width 0.5s ease;
-        }
-        
-        .marquee-active .marquee-container {
-            width: 350px; /* Lebar teks berjalan */
+            transition: width 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
         }
 
-        .marquee-text {
+        .active-marquee .marquee-wrapper {
+            width: 300px; /* Sesuaikan lebar teks */
+        }
+
+        .marquee-content {
             display: inline-block;
+            white-space: nowrap;
             padding-left: 100%;
-            animation: marquee 10s linear infinite;
+            animation: marquee 12s linear infinite;
         }
 
         @keyframes marquee {
             0% { transform: translate(0, 0); }
             100% { transform: translate(-100%, 0); }
+        }
+
+        /* ================= MODAL STYLE ================= */
+        #universal-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10001; /* Lebih tinggi dari landing page */
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
     </style>
 </head>
@@ -374,116 +366,56 @@
 <body>
 
     <div id="landing-page">
-        
         <header class="sticky top-0 z-50 flex justify-between items-center px-8 py-5 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
             <h1 class="text-2xl font-extrabold tracking-tighter text-white">
                 CAMPUS<span class="text-[#00CED1]">3D</span>
             </h1>
             <div class="flex gap-4">
-                <button onclick="openModal('daftar')" class="text-sm font-semibold hover:text-[#00CED1] transition">Masuk</button>
-                <button onclick="openModal('daftar')" class="bg-[#00CED1] text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition">Daftar</button>
+                <button onclick="openModal('daftar')" class="text-sm font-semibold hover:text-[#00CED1] transition">Daftar</button>
+                <button id="loginBtn" class="bg-[#00CED1] text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition">
+                    Login
+                </button>
             </div>
         </header>
 
-        <section class="relative pt-24 pb-20 px-6 text-center overflow-hidden">
-            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_rgba(0,206,209,0.1)_0%,_transparent_70%)] pointer-events-none"></div>
-            
-            <h2 class="text-5xl md:text-7xl font-extrabold leading-tight text-gradient mb-6">
-                Ubah Keahlian Anda<br>Menjadi Dunia 3D
+        <section class="relative pt-24 pb-20 px-6 text-center">
+            <h2 class="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+                Ubah Keahlian Anda<br><span class="text-[#00CED1]">Menjadi Dunia 3D</span>
             </h2>
-
-            <p class="mt-6 text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
-                Bukan sekadar Zoom. Ini adalah <span class="text-white font-semibold">Dunia Virtual Imersif</span> di mana mengajar lebih hidup dan belajar lebih nyata. Tanpa install, langsung di browser.
-            </p>
-
+            
             <div class="mt-12 flex flex-col items-center gap-6">
-                <button id="enter-btn" class="bg-[#00CED1] text-black px-10 py-4 rounded-2xl font-extrabold text-xl shadow-[0_0_30px_rgba(0,206,209,0.3)] hover:shadow-[0_0_50px_rgba(0,206,209,0.5)] transition-all hover:-translate-y-1">
+                <button id="enter-btn" class="bg-[#00CED1] text-black px-10 py-4 rounded-2xl font-extrabold text-xl shadow-[0_0_30px_rgba(0,206,209,0.3)] hover:scale-105 transition-all">
                     🚀 MASUK DUNIA 3D
                 </button>
                 
                 <div class="flex flex-wrap justify-center gap-8 mt-4 text-xs uppercase tracking-widest text-gray-500 font-bold">
-                    <div class="flex items-center gap-2"><span class="key-hint">W A S D</span> Gerak</div>
-                    <div class="flex items-center gap-2"><span class="key-hint">MOUSE</span> Orbit 360°</div>
-                    <div class="flex items-center gap-2"><span class="key-hint">M</span> Mic On/Off</div>
+                    <div><span class="border border-white/20 px-2 py-1 rounded">W A S D</span> Jalan</div>
+                    <div><span class="border border-white/20 px-2 py-1 rounded">MOUSE</span> Orbit</div>
                 </div>
             </div>
         </section>
 
-        <section class="py-24 px-6 max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <h3 class="text-3xl font-bold italic">Masa Depan Marketplace EdTech</h3>
+        <footer class="py-12 border-t border-white/5 text-center">
+            <div class="flex justify-center gap-8 text-sm text-gray-500 mb-4">
+                <a href="javascript:void(0)" onclick="openModal('refund')" class="hover:text-[#00CED1]">Kebijakan Refund</a>
+                <a href="javascript:void(0)" onclick="openModal('terms')" class="hover:text-[#00CED1]">Syarat & Ketentuan</a>
             </div>
-
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="glass-card p-10 rounded-3xl">
-                    <div class="w-12 h-12 bg-[#00CED1]/10 rounded-xl flex items-center justify-center mb-6">
-                        <svg class="w-6 h-6 text-[#00CED1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    </div>
-                    <h4 class="text-xl font-bold mb-3">Sistem Escrow Aman</h4>
-                    <p class="text-gray-400 text-sm">Dana disimpan aman dan hanya cair 24 jam setelah kelas sukses. Refund 100% jika pengajar absen.</p>
-                </div>
-
-                <div class="glass-card p-10 rounded-3xl">
-                    <div class="w-12 h-12 bg-[#00CED1]/10 rounded-xl flex items-center justify-center mb-6">
-                        <svg class="w-6 h-6 text-[#00CED1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-                    </div>
-                    <h4 class="text-xl font-bold mb-3">Spatial Audio</h4>
-                    <p class="text-gray-400 text-sm">Suara mengecil saat menjauh dan mengeras saat mendekati avatar lain. Diskusi jadi sangat natural.</p>
-                </div>
-
-                <div class="glass-card p-10 rounded-3xl">
-                    <div class="w-12 h-12 bg-[#00CED1]/10 rounded-xl flex items-center justify-center mb-6">
-                        <svg class="w-6 h-6 text-[#00CED1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <h4 class="text-xl font-bold mb-3">Tanpa Instalasi</h4>
-                    <p class="text-gray-400 text-sm">Teknologi WebGL tercanggih memungkinkan akses dunia 3D langsung dari browser perangkat apapun.</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="py-24 bg-white/5 border-y border-white/5 text-center">
-            <h3 class="text-4xl font-extrabold mb-10">Pilih Jalur Pionir Anda</h3>
-            
-            <div class="flex flex-col md:flex-row justify-center gap-6 mb-12">
-                <button onclick="openModal('daftar')" class="bg-[#00CED1] text-black px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition">
-                    Jadi Pengajar (3 Sesi Gratis)
-                </button>
-                <button onclick="openModal('daftar')" class="border-2 border-[#00CED1] text-[#00CED1] px-10 py-5 rounded-2xl font-bold text-lg hover:bg-[#00CED1] hover:text-black transition">
-                    Jadi Siswa (Garansi Refund)
-                </button>
-            </div>
-
-            <button id="enter-btn-2" class="text-gray-500 hover:text-white underline text-sm transition">
-                Lewati dan Masuk Sebagai Tamu 🚀
-            </button>
-        </section>
-
-        <footer class="py-16 px-8 border-t border-white/5 bg-gray-950">
-            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-                <div class="text-left">
-                    <h1 class="text-xl font-bold mb-2">CAMPUS<span class="text-[#00CED1]">3D</span></h1>
-                    <p class="text-gray-500 text-sm">© 2026 Campus3D by Pioneer Portal Team</p>
-                </div>
-                <div class="flex gap-8 text-sm text-gray-400">
-                    <a href="javascript:void(0)" onclick="openModal('refund')" class="hover:text-[#00CED1]">Kebijakan Refund</a>
-                    <a href="javascript:void(0)" onclick="openModal('terms')" class="hover:text-[#00CED1]">Syarat & Ketentuan</a>
-                    <a href="#" class="hover:text-[#00CED1]">Kontak Support</a>
-                </div>
-            </div>
+            <p class="text-xs text-gray-600">© 2026 Campus3D by Pioneer Portal Team</p>
         </footer>
     </div>
 
-    <div id="universal-modal" class="fixed inset-0 z-[10001] hidden flex items-center justify-center px-4">
+    <div id="universal-modal">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal()"></div>
         <div class="glass-card w-full max-w-lg p-8 rounded-3xl relative z-10 border-[#00CED1]/20">
             <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
-            <div id="modal-content"></div>
+            <div id="modal-content">
+                </div>
         </div>
     </div>
 
     <div id="ui-overlay">
         <div class="loader-spin"></div>
-        <p class="text-sm font-bold tracking-widest text-[#00CED1] animate-pulse">MEMASUKI DUNIA 3D...</p>
+        <p class="text-sm font-bold text-[#00CED1] animate-pulse uppercase tracking-widest">Memuat Dunia...</p>
     </div>
 
     <div id="live-indicator-bar" class="fixed top-4 left-4 z-[50] flex items-center pointer-events-none">
@@ -492,9 +424,9 @@
                 <div class="w-2 h-2 bg-[#00CED1] rounded-full animate-ping"></div>
                 <span class="text-xs font-bold uppercase tracking-widest text-white whitespace-nowrap">🎓 Campus3D Live</span>
             </div>
-            <div id="marquee-wrapper" class="marquee-container border-l border-white/20 pl-3">
-                <div class="marquee-text text-[10px] text-[#00CED1] font-medium uppercase tracking-wider">
-                    copy dan share link di address untuk mengajak teman anda bergabung
+            <div class="marquee-wrapper border-l border-white/20 pl-3">
+                <div class="marquee-content text-[10px] text-[#00CED1] font-medium uppercase tracking-wider">
+                    copy dan share link di address bar untuk mengajak teman anda bergabung sekarang juga
                 </div>
             </div>
         </div>
@@ -505,31 +437,32 @@
     <script type="module" src="/src/main.ts"></script>
 
     <script>
-        // LOGIKA MARQUEE 10 DETIK
-        const marqueeWrapper = document.getElementById('marquee-wrapper');
+        // LOGIKA MARQUEE (Muncul setiap 10 detik selama 8 detik)
+        const indicator = document.getElementById('live-indicator-bar');
         setInterval(() => {
-            marqueeWrapper.parentElement.classList.add('marquee-active');
+            indicator.classList.add('active-marquee');
             setTimeout(() => {
-                marqueeWrapper.parentElement.classList.remove('marquee-active');
-            }, 8000); // Tampil selama 8 detik
-        }, 10000); // Muncul setiap 10 detik
+                indicator.classList.remove('active-marquee');
+            }, 8000); 
+        }, 10000);
 
-        // LOGIKA MODAL UNIVERSAL
+        // LOGIKA MODAL
         const modal = document.getElementById("universal-modal");
         const modalContent = document.getElementById("modal-content");
+        
         const contentData = {
-            daftar: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Akses Campus3D</h3><p class="text-sm text-gray-400 mb-6">Pilih peran Anda untuk mulai menjelajah:</p><div class="grid grid-cols-2 gap-2 mt-4"><button class="border border-white/10 py-3 rounded-lg text-xs font-bold hover:border-[#00CED1]">Daftar Pengajar</button><button class="border border-white/10 py-3 rounded-lg text-xs font-bold hover:border-[#00CED1]">Daftar Siswa</button></div>`,
-            refund: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Kebijakan Refund</h3><p class="text-xs text-gray-400 leading-relaxed italic">Garansi 100% refund otomatis jika pengajar tidak hadir dalam 15 menit pertama kelas. Dana Anda aman bersama Campus3D Escrow.</p>`,
-            terms: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Syarat & Ketentuan</h3><p class="text-[10px] text-gray-400 leading-relaxed">1. Komisi platform 15% per transaksi tiket.<br>2. Dilarang menyebarkan konten SARA/Negatif.<br>3. Dana hasil mengajar cair 24 jam setelah sesi sukses.</p>`
+            daftar: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Gabung Campus3D</h3><p class="text-sm text-gray-400">Silahkan klik tombol <b>Login</b> di pojok kanan atas untuk masuk menggunakan akun Google Anda.</p>`,
+            refund: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Kebijakan Refund</h3><p class="text-xs text-gray-400 leading-relaxed italic">Garansi 100% refund otomatis jika pengajar tidak hadir dalam 15 menit pertama kelas. Dana Anda aman di sistem Escrow kami.</p>`,
+            terms: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Syarat & Ketentuan</h3><p class="text-[10px] text-gray-400 leading-relaxed">1. Komisi platform 15% per transaksi tiket.<br>2. Dilarang menyebarkan konten negatif.<br>3. Dana hasil mengajar cair 24 jam setelah sesi sukses.</p>`
         };
 
-        function openModal(type) { 
-            modalContent.innerHTML = contentData[type]; 
-            modal.classList.remove("hidden"); 
+        function openModal(type) {
+            modalContent.innerHTML = contentData[type];
+            modal.style.display = "flex";
         }
 
-        function closeModal() { 
-            modal.classList.add("hidden"); 
+        function closeModal() {
+            modal.style.display = "none";
         }
 
         // LOGIKA ENTER WORLD (ASLI)
@@ -538,20 +471,14 @@
             overlay.style.opacity = "1";
             overlay.style.pointerEvents = "auto";
 
-            // mic trigger asli
             navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => { });
 
-            // hide landing asli
             document.getElementById("landing-page").style.display = "none";
-
-            // show canvas (ANTI BLUR) asli
             const canvas = document.getElementById("renderCanvas");
             canvas.style.visibility = "visible";
 
-            // fix resolution asli
             window.dispatchEvent(new Event('resize'));
             
-            // Auto hide loader after 2s for smoother feel
             setTimeout(() => {
                 overlay.style.opacity = "0";
                 overlay.style.pointerEvents = "none";
@@ -559,8 +486,6 @@
         }
 
         document.getElementById("enter-btn").onclick = enterWorld;
-        document.getElementById("enter-btn-2").onclick = enterWorld;
     </script>
 </body>
-
 </html>

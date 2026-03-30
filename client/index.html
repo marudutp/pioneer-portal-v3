@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -247,4 +247,182 @@
     </script>
 </body>
 
+</html> -->
+
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Campus3D - Marketplace EdTech Imersif</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --primary: #00CED1; --bg-dark: #020617; }
+        body { margin: 0; overflow: hidden; background: var(--bg-dark); font-family: 'Plus Jakarta Sans', sans-serif; color: white; }
+
+        #renderCanvas { width: 100vw; height: 100vh; visibility: hidden; display: block; position: fixed; top: 0; left: 0; z-index: 1; }
+
+        #ui-overlay {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle at center, #083344 0%, #020617 100%);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader-spin {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(0, 206, 209, 0.2);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #landing-page {
+            position: fixed; inset: 0;
+            z-index: 100;
+            overflow-y: auto;
+            background: var(--bg-dark);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .key-hint {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--primary);
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ================= LANDING ================= -->
+<div id="landing-page">
+
+    <header class="sticky top-0 z-[110] flex justify-between items-center px-8 py-5 bg-gray-950/90 backdrop-blur-md border-b border-white/5">
+        <h1 class="text-2xl font-extrabold tracking-tighter">CAMPUS<span class="text-[#00CED1]">3D</span></h1>
+        <button id="loginBtn" class="bg-[#00CED1] text-black px-6 py-2 rounded-full font-bold">
+            LOGIN / DAFTAR
+        </button>
+    </header>
+
+    <section class="pt-24 pb-20 text-center">
+        <h2 class="text-5xl font-extrabold mb-6">
+            Ubah Keahlian Anda<br>
+            <span class="text-[#00CED1]">Menjadi Dunia 3D</span>
+        </h2>
+
+        <button id="enter-btn" class="bg-[#00CED1] text-black px-10 py-4 rounded-2xl font-bold text-xl">
+            🚀 MASUK DUNIA 3D
+        </button>
+    </section>
+
+</div>
+
+<!-- ================= MODAL ================= -->
+<div id="universal-modal" class="fixed inset-0 z-[10000] hidden flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/90" onclick="closeModal()"></div>
+
+    <div class="glass-card w-full max-w-md p-8 rounded-3xl relative z-[10001]">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-2xl">&times;</button>
+        <div id="modal-content"></div>
+    </div>
+</div>
+
+<!-- ================= OVERLAY ================= -->
+<div id="ui-overlay">
+    <div class="loader-spin"></div>
+    <p class="text-xs font-bold text-[#00CED1]">Initializing World...</p>
+</div>
+
+<canvas id="renderCanvas"></canvas>
+
+<!-- ================= MAIN TS ================= -->
+<script type="module" src="/src/main.ts"></script>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+    const modal = document.getElementById("universal-modal");
+    const modalContent = document.getElementById("modal-content");
+
+    const contentData = {
+        daftar: `
+            <h3 class="text-xl font-bold mb-4 text-[#00CED1]">Akses Campus3D</h3>
+            <button id="googleSignInBtn" class="w-full bg-white text-black py-3 rounded-xl font-bold">
+                Login dengan Google
+            </button>
+        `
+    };
+
+    function openModal(type) {
+        modalContent.innerHTML = contentData[type];
+        modal.classList.remove("hidden");
+    }
+
+    function closeModal() {
+        modal.classList.add("hidden");
+    }
+
+    // ================= FIX 1: HEADER BUTTON =================
+    document.getElementById("loginBtn").onclick = () => openModal("daftar");
+
+    // ================= FIX 2: EVENT DELEGATION =================
+    document.addEventListener("click", (e) => {
+        if (e.target && e.target.id === "googleSignInBtn") {
+            console.log("🔥 Google Login Clicked");
+
+            if (window.loginWithGoogle) {
+                window.loginWithGoogle();
+            } else {
+                console.error("❌ loginWithGoogle belum tersedia di window");
+            }
+        }
+    });
+
+    // ================= ENTER WORLD =================
+    function enterWorld() {
+        const overlay = document.getElementById("ui-overlay");
+
+        overlay.style.opacity = "1";
+        overlay.style.pointerEvents = "auto";
+
+        navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {});
+
+        document.getElementById("landing-page").style.display = "none";
+
+        const canvas = document.getElementById("renderCanvas");
+        canvas.style.visibility = "visible";
+
+        window.dispatchEvent(new Event('resize'));
+
+        setTimeout(() => {
+            overlay.style.opacity = "0";
+            overlay.style.pointerEvents = "none";
+        }, 2000);
+    }
+
+    document.getElementById("enter-btn").onclick = enterWorld;
+</script>
+
+</body>
 </html>

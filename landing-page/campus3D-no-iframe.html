@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Campus3D - Dunia Belajar 3D</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#00CED1"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-gray-950 text-white font-sans">
+
+<!-- ================= HEADER ================= -->
+<header class="flex justify-between items-center px-8 py-5 border-b border-gray-800">
+  <h1 class="text-2xl font-bold text-primary">Campus3D</h1>
+
+  <nav class="hidden md:flex gap-6 text-sm">
+    <a href="#" class="hover:text-primary">Fitur</a>
+    <a href="#" class="hover:text-primary">Pricing</a>
+    <a href="#" class="hover:text-primary">Demo</a>
+  </nav>
+
+  <div class="flex gap-3">
+    <button class="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary hover:text-black">
+      Login
+    </button>
+    <button class="px-4 py-2 bg-primary text-black rounded-lg font-semibold">
+      Daftar
+    </button>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="text-center py-24 px-6">
+  <h2 class="text-4xl md:text-6xl font-bold leading-tight">
+    Ubah Keahlian Anda <br/>
+    Menjadi <span class="text-primary">Pengalaman 3D Imersif</span>
+  </h2>
+
+  <p class="mt-6 text-gray-400 max-w-2xl mx-auto">
+    Bukan sekadar Zoom. Ini adalah dunia virtual tanpa batas.  
+    Masuk langsung dari browser — tanpa install, tanpa ribet.
+  </p>
+
+  <div class="mt-8 flex flex-col md:flex-row justify-center gap-4">
+    <a href="https://pioneer-portal-v3.vercel.app" target="_blank">
+      <button class="bg-primary text-black px-6 py-3 rounded-lg font-semibold">
+        🚀 Masuk Dunia 3D
+      </button>
+    </a>
+
+    <button class="border border-primary px-6 py-3 rounded-lg text-primary">
+      Cari Kelas 3D
+    </button>
+  </div>
+</section>
+
+<!-- ================= DEMO SECTION ================= -->
+<section class="px-6 py-20 bg-gray-900 text-center">
+  <h3 class="text-3xl font-bold mb-6">Rasakan Pengalaman Nyata</h3>
+
+  <p class="text-gray-400 max-w-xl mx-auto mb-8">
+    Masuk ke ruang kelas virtual 3D, berjalan dengan avatar, dan berinteraksi secara real-time 
+    dengan spatial audio yang terasa seperti dunia nyata.
+  </p>
+
+  <!-- CTA DEMO -->
+  <a href="https://pioneer-portal-v3.vercel.app" target="_blank">
+    <button class="bg-primary text-black px-8 py-4 rounded-xl text-lg font-semibold hover:scale-105 transition">
+      🎮 Launch Live Demo
+    </button>
+  </a>
+
+  <!-- Guidance -->
+  <div class="mt-10 grid md:grid-cols-3 gap-6 text-sm text-gray-400">
+    <div>⌨️ <b>W A S D</b><br/>Gerakkan avatar</div>
+    <div>🖱️ <b>Mouse</b><br/>Lihat 360°</div>
+    <div>🎤 <b>Tombol M</b><br/>Aktifkan suara</div>
+  </div>
+</section>
+
+<!-- ================= HOW IT WORKS ================= -->
+<section class="py-20 px-6 text-center">
+  <h3 class="text-3xl font-bold mb-12">Sistem Aman & Transparan</h3>
+
+  <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+
+    <div class="p-6 border border-gray-800 rounded-xl">
+      <h4 class="text-primary text-xl font-bold mb-2">1. Beli Tiket</h4>
+      <p class="text-gray-400">
+        Dana diamankan oleh sistem escrow Campus3D.
+      </p>
+    </div>
+
+    <div class="p-6 border border-gray-800 rounded-xl">
+      <h4 class="text-primary text-xl font-bold mb-2">2. Kelas 3D</h4>
+      <p class="text-gray-400">
+        Belajar dalam ruang virtual interaktif & imersif.
+      </p>
+    </div>
+
+    <div class="p-6 border border-gray-800 rounded-xl">
+      <h4 class="text-primary text-xl font-bold mb-2">3. Dana Cair</h4>
+      <p class="text-gray-400">
+        Pengajar menerima dana 24 jam setelah kelas sukses.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= FEATURES ================= -->
+<section class="py-20 px-6 bg-gray-900">
+  <h3 class="text-3xl font-bold text-center mb-12">Fitur Utama</h3>
+
+  <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+
+    <div class="p-6 border border-gray-800 rounded-xl">
+      <h4 class="text-primary font-bold text-lg mb-2">Multi-Device</h4>
+      <p class="text-gray-400">Langsung di browser, tanpa install.</p>
+    </div>
+
+    <div class="p-6 border border-gray-800 rounded-xl">
+      <h4 class="text-primary font-bold text-lg mb-2">3D Assets</h4>
+      <p class="text-gray-400">Upload .glb/.gltf untuk pembelajaran nyata.</p>
+    </div>
+
+    <div class="p-6 border border-gray-800 rounded-xl">
+      <h4 class="text-primary font-bold text-lg mb-2">Spatial Audio</h4>
+      <p class="text-gray-400">Suara berbasis posisi avatar.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= PRICING ================= -->
+<section class="py-20 px-6 text-center">
+  <h3 class="text-3xl font-bold mb-12">Pricing</h3>
+
+  <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+
+    <div class="border border-gray-800 rounded-xl p-8">
+      <h4 class="text-xl font-bold mb-4">Starter</h4>
+      <p class="text-4xl font-bold text-primary mb-4">Rp 0</p>
+
+      <ul class="text-gray-400 space-y-2">
+        <li>✔ 3 Sesi Gratis</li>
+        <li>✔ 15% Fee</li>
+      </ul>
+    </div>
+
+    <div class="border border-primary rounded-xl p-8">
+      <h4 class="text-xl font-bold mb-4">Professional</h4>
+      <p class="text-4xl font-bold text-primary mb-4">Rp 299rb/bln</p>
+
+      <ul class="text-gray-400 space-y-2">
+        <li>✔ Unlimited kelas</li>
+        <li>✔ Growth tools</li>
+        <li>✔ 15% Fee</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section class="py-20 text-center">
+  <h3 class="text-3xl font-bold mb-6">
+    Mulai Sekarang. Jadilah Pionir.
+  </h3>
+
+  <a href="https://pioneer-portal-v3.vercel.app" target="_blank">
+    <button class="bg-primary text-black px-8 py-4 rounded-xl text-lg font-semibold">
+      🚀 Masuk Dunia 3D Sekarang
+    </button>
+  </a>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="border-t border-gray-800 py-8 px-6 text-center text-gray-500 text-sm">
+  <p>© 2026 Campus3D</p>
+
+  <div class="mt-4 flex justify-center gap-6">
+    <a href="#">Refund</a>
+    <a href="#">Terms</a>
+    <a href="#">Support</a>
+  </div>
+</footer>
+
+</body>
+</html>

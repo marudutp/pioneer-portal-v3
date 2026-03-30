@@ -4,11 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Pioneer Portal V3 - Virtual Classroom</title>
-
-    <!-- Tailwind untuk Landing -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Campus3D - Virtual Classroom</title>
 
     <style>
         * {
@@ -16,7 +12,6 @@
             padding: 0;
             box-sizing: border-box;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -25,23 +20,56 @@
             background: #000;
         }
 
-        /* ================= LANDING OVERLAY ================= */
-        #landing-wrapper {
+        /* ================= LANDING ================= */
+        #landing-page {
             position: fixed;
             inset: 0;
+            background: radial-gradient(circle at center, #020617, #000);
+            display: flex;
+            justify-content: center;
+            align-items: center;
             z-index: 9999;
-            background: #020617;
-            overflow-y: auto;
         }
 
-        /* ================= ORIGINAL STYLE (TIDAK DIUBAH) ================= */
+        .landing-content {
+            text-align: center;
+            color: white;
+        }
 
+        .landing-content h1 {
+            font-size: 56px;
+            color: #00CED1;
+            margin-bottom: 10px;
+        }
+
+        .landing-content p {
+            color: #aaa;
+            margin-bottom: 25px;
+        }
+
+        .landing-content button {
+            background: #00CED1;
+            color: black;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .landing-content button:hover {
+            transform: scale(1.05);
+        }
+
+        /* ================= CANVAS (FIX BLUR) ================= */
         #renderCanvas {
             width: 100vw;
             height: 100vh;
-            display: block;
+            visibility: hidden; /* ✅ FIX */
         }
 
+        /* ================= LOADER ================= */
         #ui-overlay {
             position: fixed;
             inset: 0;
@@ -51,150 +79,106 @@
             align-items: center;
             z-index: 1000;
             pointer-events: none;
+            opacity: 0;
+            transition: 0.5s;
         }
 
-        .info-panel {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 8px 15px;
-            border-radius: 20px;
+        .loader {
+            text-align: center;
             color: white;
-            z-index: 100;
         }
 
-        .capacity-panel {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 8px 15px;
-            border-radius: 20px;
-            color: white;
-            z-index: 100;
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: auto;
         }
 
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .info-panel,
+        .capacity-panel,
         .role-badge {
             position: fixed;
-            top: 60px;
-            left: 10px;
             background: rgba(0, 0, 0, 0.7);
-            padding: 5px 12px;
-            border-radius: 15px;
             color: white;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
             z-index: 100;
         }
 
-        #mobile-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            display: none;
-            z-index: 200;
-        }
+        .info-panel { top: 10px; left: 10px; }
+        .capacity-panel { top: 10px; right: 10px; }
+        .role-badge { top: 50px; left: 10px; }
 
-        .control-label {
-            position: absolute;
-            bottom: 140px;
-            left: 20px;
-            color: white;
-            font-size: 10px;
-        }
-
-        .control-label.right {
-            left: auto;
-            right: 20px;
-        }
-
-        #debug-panel {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: black;
-            color: #0f0;
-            font-size: 9px;
-            z-index: 9999;
-            display: none;
-        }
-
-        ::-webkit-scrollbar {
-            display: none;
-        }
     </style>
 </head>
 
 <body>
 
-    <!-- ================= LANDING (DARI FILE KEDUA) ================= -->
-    <div id="landing-wrapper">
-
-        <header class="flex justify-between items-center px-8 py-5 border-b border-gray-800 text-white">
-            <h1 class="text-2xl font-bold text-cyan-400">Campus3D</h1>
-        </header>
-
-        <section class="text-center py-24 px-6 text-white">
-            <h2 class="text-4xl font-bold">
-                Ubah Keahlian Anda Menjadi Dunia 3D
-            </h2>
-
-            <p class="mt-6 text-gray-400">
-                Platform imersif tanpa install. Masuk langsung dari browser.
-            </p>
-
-            <button id="enter-world"
-                class="mt-8 bg-cyan-400 text-black px-6 py-3 rounded-lg font-bold">
-                🚀 Masuk Dunia 3D
-            </button>
-        </section>
-
-    </div>
-
-    <!-- ================= ORIGINAL UI ================= -->
-    <div id="ui-overlay">
-        <div class="loader">
-            <p>Memasuki Kelas Virtual...</p>
+    <!-- ================= LANDING ================= -->
+    <div id="landing-page">
+        <div class="landing-content">
+            <h1>Campus3D</h1>
+            <p>Masuk ke Dunia Belajar Imersif</p>
+            <button id="enter-btn">🚀 Masuk Dunia 3D</button>
         </div>
     </div>
 
-    <div class="info-panel">🎓 Pioneer Portal V3</div>
+    <!-- ================= LOADER ================= -->
+    <div id="ui-overlay">
+        <div class="loader">
+            <div class="loader-spinner"></div>
+            <p>Memasuki Dunia 3D...</p>
+        </div>
+    </div>
+
+    <!-- ================= UI ================= -->
+    <div class="info-panel">🎓 Campus3D</div>
     <div class="capacity-panel">👥 <span id="current-capacity">0</span>/10</div>
     <div class="role-badge" id="role-badge">Loading...</div>
 
-    <div id="mobile-controls"></div>
-
-    <div class="control-label" id="control-label-left" style="display:none;">🎮</div>
-    <div class="control-label right" id="control-label-right" style="display:none;">🔄</div>
-
-    <div id="debug-panel"></div>
-
-    <!-- CANVAS -->
+    <!-- ================= CANVAS ================= -->
     <canvas id="renderCanvas"></canvas>
 
-    <!-- SCRIPT ORIGINAL (TIDAK DIUBAH) -->
-    <script type="module" src="/src/main.ts"></script>
-
-    <!-- ================= LANDING CONTROL ================= -->
+    <!-- ================= SCRIPT ================= -->
     <script>
-        const landing = document.getElementById("landing-wrapper");
-        const enterBtn = document.getElementById("enter-world");
-
-        // sembunyikan canvas & UI dulu
-        document.getElementById("renderCanvas").style.display = "none";
+        const enterBtn = document.getElementById("enter-btn");
 
         enterBtn.addEventListener("click", async () => {
 
-            // mic trigger (optional tapi bagus)
+            console.log("🚀 Entering 3D World...");
+
+            const overlay = document.getElementById("ui-overlay");
+            overlay.style.opacity = "1";
+
             try {
                 await navigator.mediaDevices.getUserMedia({ audio: true });
             } catch (e) { }
 
-            // tampilkan world
-            document.getElementById("renderCanvas").style.display = "block";
+            document.getElementById("landing-page").style.display = "none";
 
-            // hilangkan landing
-            landing.style.display = "none";
+            const canvas = document.getElementById("renderCanvas");
+
+            // ✅ FIX BLUR
+            canvas.style.visibility = "visible";
+            window.dispatchEvent(new Event('resize'));
+
+            const script = document.createElement("script");
+            script.type = "module";
+            script.src = "/src/main.ts";
+
+            document.body.appendChild(script);
+
         });
     </script>
 

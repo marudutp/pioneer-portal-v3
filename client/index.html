@@ -66,7 +66,8 @@
         #renderCanvas {
             width: 100vw;
             height: 100vh;
-            visibility: hidden; /* ✅ FIX */
+            visibility: hidden;
+            /* ✅ FIX */
         }
 
         /* ================= LOADER ================= */
@@ -116,10 +117,20 @@
             z-index: 100;
         }
 
-        .info-panel { top: 10px; left: 10px; }
-        .capacity-panel { top: 10px; right: 10px; }
-        .role-badge { top: 50px; left: 10px; }
+        .info-panel {
+            top: 10px;
+            left: 10px;
+        }
 
+        .capacity-panel {
+            top: 10px;
+            right: 10px;
+        }
+
+        .role-badge {
+            top: 50px;
+            left: 10px;
+        }
     </style>
 </head>
 
@@ -151,6 +162,8 @@
     <canvas id="renderCanvas"></canvas>
 
     <!-- ================= SCRIPT ================= -->
+    <script type="module" src="/src/main.ts"></script>
+
     <script>
         const enterBtn = document.getElementById("enter-btn");
 
@@ -161,26 +174,23 @@
             const overlay = document.getElementById("ui-overlay");
             overlay.style.opacity = "1";
 
+            // trigger mic permission
             try {
                 await navigator.mediaDevices.getUserMedia({ audio: true });
             } catch (e) { }
 
+            // hide landing
             document.getElementById("landing-page").style.display = "none";
 
             const canvas = document.getElementById("renderCanvas");
 
-            // ✅ FIX BLUR
+            // FIX blur
             canvas.style.visibility = "visible";
             window.dispatchEvent(new Event('resize'));
-
-            const script = document.createElement("script");
-            script.type = "module";
-            script.src = "/src/main.ts";
-
-            document.body.appendChild(script);
 
         });
     </script>
 
 </body>
+
 </html>

@@ -254,7 +254,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Campus3D - Marketplace EdTech Imersif</title>
+    <title>Campus3D - Marketplace EdTech</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -267,98 +267,93 @@
 
         body {
             margin: 0;
-            overflow: hidden;
             background: var(--bg-dark);
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: white;
         }
 
-        /* ================= CANVAS (TETAP ASLI) ================= */
+        /* ================= CANVAS (LAYER TERBAWAH) ================= */
         #renderCanvas {
-            width: 100vw;
-            height: 100vh;
-            visibility: hidden;
-            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            visibility: hidden; /* Muncul setelah enterWorld */
             outline: none;
+            z-index: 1;
         }
 
-        /* ================= OVERLAY LOADER ================= */
-        #ui-overlay {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at center, #083344 0%, #020617 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .loader-spin {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(0, 206, 209, 0.2);
-            border-top: 3px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* ================= LANDING PAGE ================= */
+        /* ================= LANDING PAGE (LAYER TENGAH) ================= */
+        /* Z-index rendah agar tidak menutupi popup Firebase */
         #landing-page {
-            position: fixed;
-            inset: 0;
-            z-index: 999; /* Z-index diturunkan agar popup auth tidak tertutup */
-            overflow-y: auto;
+            position: relative;
+            z-index: 10; 
+            width: 100%;
+            min-height: 100vh;
             background: var(--bg-dark);
-            scroll-behavior: smooth;
+            overflow-x: hidden;
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        /* ================= MARQUEE ANIMATION ================= */
-        .marquee-wrapper {
+        /* ================= MARQUEE CSS ================= */
+        .marquee-box {
+            display: inline-block;
             overflow: hidden;
-            width: 0;
-            transition: width 0.5s ease-in-out;
-            display: flex;
-            align-items: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            max-width: 0;
+            transition: max-width 0.5s ease;
         }
-
-        .active-marquee .marquee-wrapper {
-            width: 300px; /* Sesuaikan lebar teks */
+        
+        .active-marquee .marquee-box {
+            max-width: 300px;
+            margin-left: 10px;
         }
 
         .marquee-content {
             display: inline-block;
-            white-space: nowrap;
-            padding-left: 100%;
-            animation: marquee 12s linear infinite;
+            animation: scroll-text 12s linear infinite;
+            color: var(--primary);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        @keyframes marquee {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(-100%, 0); }
+        @keyframes scroll-text {
+            from { transform: translateX(100%); }
+            to { transform: translateX(-100%); }
         }
 
-        /* ================= MODAL STYLE ================= */
+        /* ================= MODAL & UI ================= */
         #universal-modal {
             position: fixed;
             inset: 0;
-            z-index: 10001; /* Lebih tinggi dari landing page */
+            z-index: 999; /* Di bawah popup Firebase tapi di atas landing */
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        #ui-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: 0.5s;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
@@ -366,70 +361,65 @@
 <body>
 
     <div id="landing-page">
-        <header class="sticky top-0 z-50 flex justify-between items-center px-8 py-5 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
-            <h1 class="text-2xl font-extrabold tracking-tighter text-white">
+        <header class="flex justify-between items-center px-8 py-6 border-b border-white/5">
+            <h1 class="text-2xl font-extrabold tracking-tighter">
                 CAMPUS<span class="text-[#00CED1]">3D</span>
             </h1>
-            <div class="flex gap-4">
-                <button onclick="openModal('daftar')" class="text-sm font-semibold hover:text-[#00CED1] transition">Daftar</button>
-                <button id="loginBtn" class="bg-[#00CED1] text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition">
-                    Login
+            <div class="flex items-center gap-6">
+                <button id="loginBtn" class="bg-[#00CED1] text-black px-6 py-2 rounded-full font-bold hover:scale-105 transition">
+                    LOGIN / DAFTAR
                 </button>
             </div>
         </header>
 
-        <section class="relative pt-24 pb-20 px-6 text-center">
-            <h2 class="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+        <section class="py-24 px-6 text-center">
+            <h2 class="text-5xl md:text-7xl font-extrabold mb-8">
                 Ubah Keahlian Anda<br><span class="text-[#00CED1]">Menjadi Dunia 3D</span>
             </h2>
-            
-            <div class="mt-12 flex flex-col items-center gap-6">
-                <button id="enter-btn" class="bg-[#00CED1] text-black px-10 py-4 rounded-2xl font-extrabold text-xl shadow-[0_0_30px_rgba(0,206,209,0.3)] hover:scale-105 transition-all">
+            <div class="flex flex-col items-center gap-8 mt-12">
+                <button id="enter-btn" class="bg-[#00CED1] text-black px-12 py-5 rounded-2xl font-black text-xl shadow-lg hover:shadow-[#00CED1]/20 transition">
                     🚀 MASUK DUNIA 3D
                 </button>
                 
-                <div class="flex flex-wrap justify-center gap-8 mt-4 text-xs uppercase tracking-widest text-gray-500 font-bold">
-                    <div><span class="border border-white/20 px-2 py-1 rounded">W A S D</span> Jalan</div>
-                    <div><span class="border border-white/20 px-2 py-1 rounded">MOUSE</span> Orbit</div>
+                <div class="flex gap-6 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                    <span>W A S D : Jalan</span>
+                    <span>Mouse : Kamera</span>
                 </div>
             </div>
         </section>
 
-        <footer class="py-12 border-t border-white/5 text-center">
-            <div class="flex justify-center gap-8 text-sm text-gray-500 mb-4">
-                <a href="javascript:void(0)" onclick="openModal('refund')" class="hover:text-[#00CED1]">Kebijakan Refund</a>
-                <a href="javascript:void(0)" onclick="openModal('terms')" class="hover:text-[#00CED1]">Syarat & Ketentuan</a>
+        <footer class="mt-20 py-10 border-t border-white/5 text-center">
+            <div class="flex justify-center gap-10 text-sm text-gray-400 mb-6">
+                <button onclick="openModal('refund')" class="hover:text-[#00CED1]">Refund</button>
+                <button onclick="openModal('terms')" class="hover:text-[#00CED1]">Terms</button>
             </div>
-            <p class="text-xs text-gray-600">© 2026 Campus3D by Pioneer Portal Team</p>
+            <p class="text-[10px] text-gray-600">© 2026 Campus3D by Pioneer Portal Team</p>
         </footer>
     </div>
 
-    <div id="universal-modal">
-        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="glass-card w-full max-w-lg p-8 rounded-3xl relative z-10 border-[#00CED1]/20">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
-            <div id="modal-content">
+    <div id="live-indicator" class="fixed top-6 left-6 z-[50] flex items-center pointer-events-none">
+        <div class="bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full flex items-center">
+            <div class="w-2 h-2 bg-[#00CED1] rounded-full animate-ping mr-2"></div>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Live</span>
+            
+            <div class="marquee-box" id="marquee-box">
+                <div class="marquee-content">
+                    copy dan share link di address bar untuk mengajak teman bergabung sekarang juga
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="universal-modal">
+        <div class="glass-card p-8 rounded-3xl max-w-sm w-full mx-4 relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-white text-xl">&times;</button>
+            <div id="modal-content" class="text-sm text-gray-300 leading-relaxed"></div>
         </div>
     </div>
 
     <div id="ui-overlay">
-        <div class="loader-spin"></div>
-        <p class="text-sm font-bold text-[#00CED1] animate-pulse uppercase tracking-widest">Memuat Dunia...</p>
-    </div>
-
-    <div id="live-indicator-bar" class="fixed top-4 left-4 z-[50] flex items-center pointer-events-none">
-        <div class="bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full flex items-center gap-3">
-            <div class="flex items-center gap-2">
-                <div class="w-2 h-2 bg-[#00CED1] rounded-full animate-ping"></div>
-                <span class="text-xs font-bold uppercase tracking-widest text-white whitespace-nowrap">🎓 Campus3D Live</span>
-            </div>
-            <div class="marquee-wrapper border-l border-white/20 pl-3">
-                <div class="marquee-content text-[10px] text-[#00CED1] font-medium uppercase tracking-wider">
-                    copy dan share link di address bar untuk mengajak teman anda bergabung sekarang juga
-                </div>
-            </div>
-        </div>
+        <div class="w-10 h-10 border-4 border-[#00CED1]/20 border-t-[#00CED1] rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] font-bold tracking-[0.2em] text-[#00CED1] uppercase">Memuat Dunia...</p>
     </div>
 
     <canvas id="renderCanvas"></canvas>
@@ -437,46 +427,48 @@
     <script type="module" src="/src/main.ts"></script>
 
     <script>
-        // LOGIKA MARQUEE (Muncul setiap 10 detik selama 8 detik)
-        const indicator = document.getElementById('live-indicator-bar');
+        // --- LOGIKA MARQUEE (Setiap 10 detik) ---
+        const marqueeBox = document.getElementById('marquee-box');
         setInterval(() => {
-            indicator.classList.add('active-marquee');
+            marqueeBox.parentElement.parentElement.classList.add('active-marquee');
             setTimeout(() => {
-                indicator.classList.remove('active-marquee');
-            }, 8000); 
-        }, 10000);
+                marqueeBox.parentElement.parentElement.classList.remove('active-marquee');
+            }, 8000); // Jalan selama 8 detik
+        }, 10000); // Muncul setiap 10 detik
 
-        // LOGIKA MODAL
-        const modal = document.getElementById("universal-modal");
-        const modalContent = document.getElementById("modal-content");
-        
-        const contentData = {
-            daftar: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Gabung Campus3D</h3><p class="text-sm text-gray-400">Silahkan klik tombol <b>Login</b> di pojok kanan atas untuk masuk menggunakan akun Google Anda.</p>`,
-            refund: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Kebijakan Refund</h3><p class="text-xs text-gray-400 leading-relaxed italic">Garansi 100% refund otomatis jika pengajar tidak hadir dalam 15 menit pertama kelas. Dana Anda aman di sistem Escrow kami.</p>`,
-            terms: `<h3 class="text-xl font-bold mb-4 text-[#00CED1]">Syarat & Ketentuan</h3><p class="text-[10px] text-gray-400 leading-relaxed">1. Komisi platform 15% per transaksi tiket.<br>2. Dilarang menyebarkan konten negatif.<br>3. Dana hasil mengajar cair 24 jam setelah sesi sukses.</p>`
+        // --- LOGIKA MODAL ---
+        const modal = document.getElementById('universal-modal');
+        const modalBody = document.getElementById('modal-content');
+        const contents = {
+            refund: `<h4 class="text-white font-bold mb-2">Kebijakan Refund</h4><p>Dana aman di Escrow. Refund 100% otomatis jika pengajar tidak hadir dalam 15 menit sesi.</p>`,
+            terms: `<h4 class="text-white font-bold mb-2">Syarat Ketentuan</h4><p>Komisi platform 15%. Dilarang menyebarkan konten negatif di ruang virtual.</p>`
         };
 
-        function openModal(type) {
-            modalContent.innerHTML = contentData[type];
-            modal.style.display = "flex";
+        function openModal(key) {
+            modalBody.innerHTML = contents[key];
+            modal.style.display = 'flex';
         }
-
         function closeModal() {
-            modal.style.display = "none";
+            modal.style.display = 'none';
         }
 
-        // LOGIKA ENTER WORLD (ASLI)
+        // --- LOGIKA ENTER WORLD (ASLI) ---
         function enterWorld() {
             const overlay = document.getElementById("ui-overlay");
             overlay.style.opacity = "1";
             overlay.style.pointerEvents = "auto";
 
+            // mic trigger
             navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => { });
 
+            // Sembunyikan landing
             document.getElementById("landing-page").style.display = "none";
+
+            // Munculkan Canvas
             const canvas = document.getElementById("renderCanvas");
             canvas.style.visibility = "visible";
 
+            // Fix Resolusi
             window.dispatchEvent(new Event('resize'));
             
             setTimeout(() => {
@@ -488,4 +480,5 @@
         document.getElementById("enter-btn").onclick = enterWorld;
     </script>
 </body>
+
 </html>
